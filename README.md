@@ -1,87 +1,88 @@
 # TakeOutBack
 
-Application portable d'archivage de l'historique Google Takeout.
+Portable application for archiving the complete history of Google Takeout exports on an external drive.
 
-## Fonctionnalités
+## Features
 
-- Archivage incrémental des exports Google Takeout
-- Versionnement des fichiers (conservation de toutes les versions)
-- Recherche rapide dans des millions de fichiers
-- Restauration ciblée de fichiers ou versions spécifiques
-- Vérification d'intégrité
-- Compression périodique par lot
-- Fonctionnement 100% portable (disque externe)
-- Compatible Windows et Linux
+- Incremental archiving of Google Takeout exports
+- File versioning (preserves all historical versions)
+- Fast search across millions of files
+- Targeted file or version restoration
+- Integrity verification with JSON/CSV reports
+- Periodic batch compression
+- 100% portable (external drive)
+- Cross-platform: Windows and Linux
 
 ## Structure
 
 ```
-D:/ (racine du disque)
-├── TakeOutBack/              # Logiciel
-│   ├── src/                  # Code source
-│   ├── tools/                # Outils portables (Python, 7-Zip)
-│   ├── database/             # Base SQLite
+Drive root/
+├── TakeOutBack/              # Application software
+│   ├── src/                  # Source code
+│   ├── tools/                # Portable tools (Python, 7-Zip)
+│   ├── database/             # SQLite database
 │   ├── config/               # Configuration
-│   ├── logs/                 # Journalisation
-│   ├── reports/              # Rapports générés
+│   ├── logs/                 # Logs
+│   ├── reports/              # Generated reports
 │   └── ...
-├── Incoming/                 # Exports Takeout à traiter
-│   └── google-takeout-*.zip  # Déposez vos exports ici
-└── Archive/                  # Archives compressées
-    ├── raw/                  # Fichiers décompressés (accès rapide)
-    ├── compressed/           # Archives compressées par lot
-    └── deleted/              # Fichiers supprimés conservés
+├── Incoming/                 # Google Takeout exports to process
+│   └── google-takeout-*.zip  # Drop your exports here
+└── Archive/                  # Compressed archives
+    ├── raw/                  # Decompressed files (fast access)
+    ├── compressed/           # Batch-compressed archives
+    └── deleted/              # Deleted files (preserved)
 ```
 
-## Installation rapide
+## Quick Install
 
 ### Linux
 
 ```bash
-# Sur le disque externe, installez TakeOutBack
-cd /media/votre_disque
+cd /media/your_drive
 curl -fsSL https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-# Sur le disque externe, installez TakeOutBack
 cd D:\
 iwr -useb https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.ps1 | iex
 ```
 
-### Installation manuelle
+### Manual Install
 
-1. Téléchargez le ZIP depuis [GitHub](https://github.com/gukak/TakeOutBack/archive/refs/heads/main.zip)
-2. Décompressez et renommez le dossier en `TakeOutBack`
-3. Placez-le à la racine de votre disque externe
-4. Créez les dossiers `Incoming/` et `Archive/` à côté de `TakeOutBack/`
+1. Download the ZIP from [GitHub](https://github.com/gukak/TakeOutBack/archive/refs/heads/main.zip)
+2. Extract and rename the folder to `TakeOutBack`
+3. Place it at the root of your external drive
+4. Create `Incoming/` and `Archive/` folders next to `TakeOutBack/`
 
-## Utilisation
-
-### Lancement
+## Usage
 
 ```bash
-# Menu interactif
-./TakeOutBack.sh
+# Interactive menu
+bash TakeOutBack.sh
 
-# Mode non interactif
-./TakeOutBack.sh import
-./TakeOutBack.sh search "photo.jpg"
-./TakeOutBack.sh verify
-./TakeOutBack.sh stats
+# Non-interactive mode
+bash TakeOutBack.sh import
+bash TakeOutBack.sh search "photo.jpg"
+bash TakeOutBack.sh verify
+bash TakeOutBack.sh stats
 ```
 
-### Workflow typique
+### Workflow
 
-1. Déposez vos exports Google Takeout dans `Incoming/`
-2. Lancez `./TakeOutBack.sh import` pour les analyser
-3. Recherchez vos fichiers avec `./TakeOutBack.sh search "nom"`
-4. Restaurez via le menu interactif ou la ligne de commande
-5. Vérifiez l'intégrité avec `./TakeOutBack.sh verify`
+1. Drop your Google Takeout exports into `Incoming/`
+2. Run `bash TakeOutBack.sh import` to process them
+3. Search files with `bash TakeOutBack.sh search "name"`
+4. Restore via interactive menu or command line
+5. Verify integrity with `bash TakeOutBack.sh verify`
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Documentation technique détaillée
-- [CHANGELOG.md](CHANGELOG.md) - Historique des versions
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed technical documentation
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+- [GUIDE_DEPLOIEMENT.md](GUIDE_DEPLOIEMENT.md) - Operational guide
+
+## License
+
+TBD.
