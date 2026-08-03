@@ -1,13 +1,12 @@
-#!/bin/bash
 # TakeOutBack installation script
 # Downloads and installs TakeOutBack on the system
+#
+# Usage:
+#   bash install.sh
+# or:
+#   curl -fsSL https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.sh | bash
 
 set -e
-
-# Self-elevate: if the script is not executable, re-exec with bash explicitly
-if [ ! -x "$0" ]; then
-    exec bash "$0" "$@"
-fi
 
 INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"
 REPO_URL="https://github.com/gukak/TakeOutBack"
@@ -84,6 +83,18 @@ fi
 find . -name "*.sh" -exec chmod +x {} \;
 chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 
+# Detect if the filesystem supports executable permissions
+if [ -x "$INSTALL_DIR/TakeOutBack/TakeOutBack.sh" ]; then
+    SCRIPT_PREFIX=""
+    echo ""
+    echo "Filesystem supports executable permissions."
+else
+    SCRIPT_PREFIX="bash "
+    echo ""
+    echo "WARNING: Filesystem does not support executable permissions"
+    echo "(likely FAT32/exFAT). You must use 'bash' to run scripts."
+fi
+
 echo ""
 echo "=== Installation complete ==="
 echo ""
@@ -93,10 +104,10 @@ echo "  $INSTALL_DIR/Incoming/       - Exports to process"
 echo "  $INSTALL_DIR/Archive/        - Archives"
 echo ""
 echo "Run TakeOutBack with:"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh"
+echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh"
 echo ""
-echo "Or in non-interactive mode:"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh import"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh search <name>"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh verify"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh stats"
+echo "Non-interactive mode:"
+echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh import"
+echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh search <name>"
+echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh verify"
+echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh stats"
