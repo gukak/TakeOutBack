@@ -1,6 +1,6 @@
 #!/bin/bash
-# Script d'installation de TakeOutBack
-# Télécharge et installe TakeOutBack sur le système
+# TakeOutBack installation script
+# Downloads and installs TakeOutBack on the system
 
 set -e
 
@@ -8,54 +8,54 @@ INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"
 REPO_URL="https://github.com/gukak/TakeOutBack"
 ZIP_URL="https://github.com/gukak/TakeOutBack/archive/refs/heads/main.zip"
 
-echo "=== Installation de TakeOutBack ==="
+echo "=== TakeOutBack Installation ==="
 echo ""
 
 if [ ! -d "$INSTALL_DIR" ]; then
-    echo "ERREUR: Le dossier d'installation n'existe pas: $INSTALL_DIR"
+    echo "ERROR: Installation directory does not exist: $INSTALL_DIR"
     exit 1
 fi
 
 if [ "$(id -u)" -eq 0 ]; then
-    echo "ERREUR: Ne pas exécuter ce script en tant que root."
+    echo "ERROR: Do not run this script as root."
     exit 1
 fi
 
 cd "$INSTALL_DIR"
 
-echo "Dossier d'installation: $INSTALL_DIR"
+echo "Installation directory: $INSTALL_DIR"
 echo ""
 
 if [ -d "TakeOutBack" ]; then
-    echo "Un dossier TakeOutBack existe déjà."
-    read -p "Voulez-vous le réinstaller ? (o/N) " -n 1 -r
+    echo "TakeOutBack directory already exists."
+    read -p "Do you want to reinstall? (y/N) " -n 1 -r
     echo ""
-    if [[ ! $REPLY =~ ^[Oo]$ ]]; then
-        echo "Installation annulée."
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Installation cancelled."
         exit 0
     fi
-    echo "Suppression de l'ancienne version..."
+    echo "Removing old version..."
     rm -rf TakeOutBack
 fi
 
-echo "Téléchargement de TakeOutBack..."
+echo "Downloading TakeOutBack..."
 if command -v curl &> /dev/null; then
     DOWNLOAD_CMD="curl -fsSL -o takeoutback.zip"
 elif command -v wget &> /dev/null; then
     DOWNLOAD_CMD="wget -q -O takeoutback.zip"
 else
-    echo "ERREUR: curl ou wget est requis pour le téléchargement."
+    echo "ERROR: curl or wget is required for download."
     exit 1
 fi
 
 $DOWNLOAD_CMD "$ZIP_URL"
 
 if [ ! -f "takeoutback.zip" ]; then
-    echo "ERREUR: Échec du téléchargement."
+    echo "ERROR: Download failed."
     exit 1
 fi
 
-echo "Décompression..."
+echo "Extracting..."
 if command -v unzip &> /dev/null; then
     unzip -q takeoutback.zip
     mv TakeOutBack-main TakeOutBack
@@ -71,25 +71,27 @@ else
 fi
 
 if [ ! -d "TakeOutBack" ]; then
-    echo "ERREUR: Échec de la décompression."
+    echo "ERROR: Decompression failed."
     exit 1
 fi
 
-chmod +x TakeOutBack/TakeOutBack.sh 2>/dev/null || true
+# Make all scripts executable
+chmod +x TakeOutBack/TakeOutBack.sh
+chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 
 echo ""
-echo "=== Installation terminée ==="
+echo "=== Installation complete ==="
 echo ""
-echo "Structure créée :"
-echo "  $INSTALL_DIR/TakeOutBack/    - Logiciel"
-echo "  $INSTALL_DIR/Incoming/       - Exports à traiter"
+echo "Created structure:"
+echo "  $INSTALL_DIR/TakeOutBack/    - Software"
+echo "  $INSTALL_DIR/Incoming/       - Exports to process"
 echo "  $INSTALL_DIR/Archive/        - Archives"
 echo ""
-echo "Lancez TakeOutBack avec:"
+echo "Run TakeOutBack with:"
 echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh"
 echo ""
-echo "Ou en mode non-interactive:"
+echo "Or in non-interactive mode:"
 echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh import"
-echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh search <nom>"
+echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh search <name>"
 echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh verify"
 echo "  $INSTALL_DIR/TakeOutBack/TakeOutBack.sh stats"
