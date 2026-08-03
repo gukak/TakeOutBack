@@ -1,0 +1,35 @@
+# Outils portables téléchargés (trop lourds pour Git)
+Tools/*/python/
+Tools/*/7zip/
+Tools/*/tools.*
+
+# Base de données
+Database/*.db
+Database/*.db-journal
+Database/*.db-wal
+Database/*.db-shm
+
+# Logs
+Logs/*
+!Logs/.gitkeep
+
+# Rapports générés
+Reports/*
+!Reports/.gitkeep
+
+# État temporaire
+Temp/*
+!Temp/.gitkeep
+
+# Configuration locale (à ne pas committer)
+Config/config.json
+Config/version.json
+
+# Fichiers Python compilés
+__pycache__/
+*.pyc
+*.pyo
+
+# Système
+.DS_Store
+Thumbs.db
