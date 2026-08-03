@@ -137,6 +137,118 @@ class Versioner:
             self.logger.error(f"Fichier source introuvable: {source_path}")
             return False
 
+    def restore_folder(
+        self,
+        folder_path: str,
+        destination_path: Path,
+        version: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Restaure un dossier complet avec toutes ses versions."""
+        files = self.db.fetch_all(
+            """
+            SELECT f.*, v.archive_path as version_archive, v.version as version_num
+            FROM files f
+            JOIN versions v ON f.id = v.file_id AND v.is_current = 1
+            WHERE f.logical_path LIKE ?
+            ORDER BY f.logical_path ASC
+            """,
+            (f"{folder_path}%",),
+        )
+
+        if not files:
+            self.logger.warning(f"Aucun fichier trouvé pour le dossier: {folder_path}")
+            return {"restored": 0, "errors": []}
+
+        restored = 0
+        errors = []
+        destination_path.mkdir(parents=True, exist_ok=True)
+
+        for file_info in files:
+            target_version = version if version else file_info["version_num"]
+            relative_path = Path(file_info["logical_path"])
+            relative_path = relative_path.relative_to(Path(folder_path)) if str(file_info["logical_path"]).startswith(folder_path) else relative_path
+            target_path = destination_path / relative_path
+
+            try:
+                source_path = Path(file_info["version_archive"])
+                if source_path.exists():
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source_path, target_path)
+                    restored += 1
+                else:
+                    errors.append(f"Fichier source introuvable: {source_path}")
+            except Exception as e:
+                errors.append(f"Erreur pour {file_info['logical_path']}: {str(e)}")
+
+        self.logger.info(
+            f"Restauration dossier terminée: {restored} fichiers restaurés, "
+            f"{len(errors)} erreurs"
+        )
+        return {"restored": restored, "errors": errors}
+
+    def restore_by_filter(
+        self,
+        filter_criteria: Dict[str, Any],
+        destination_path: Path,
+    ) -> Dict[str, Any]:
+        """Restaure des fichiers correspondant à des filtres (date, extension)."""
+        conditions = []
+        params = []
+
+        if filter_criteria.get("extension"):
+            conditions.append("f.extension = ?")
+            params.append(filter_criteria["extension"].lstrip("."))
+
+        if filter_criteria.get("date_from"):
+            conditions.append("f.discovery_date >= ?")
+            params.append(filter_criteria["date_from"])
+
+        if filter_criteria.get("date_to"):
+            conditions.append("f.discovery_date <= ?")
+            params.append(filter_criteria["date_to"])
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+        files = self.db.fetch_all(
+            f"""
+            SELECT f.*, v.archive_path as version_archive, v.version as version_num
+            FROM files f
+            JOIN versions v ON f.id = v.file_id AND v.is_current = 1
+            WHERE {where_clause}
+            ORDER BY f.logical_path ASC
+            """,
+            tuple(params),
+        )
+
+        if not files:
+            self.logger.warning("Aucun fichier ne correspond aux filtres")
+            return {"restored": 0, "errors": []}
+
+        restored = 0
+        errors = []
+        destination_path.mkdir(parents=True, exist_ok=True)
+
+        for file_info in files:
+            relative_path = Path(file_info["logical_path"])
+            target_path = destination_path / relative_path
+
+            try:
+                source_path = Path(file_info["version_archive"])
+                if source_path.exists():
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source_path, target_path)
+                    restored += 1
+                else:
+                    errors.append(f"Fichier source introuvable: {source_path}")
+            except Exception as e:
+                errors.append(f"Erreur pour {file_info['logical_path']}: {str(e)}")
+
+        self.logger.info(
+            f"Restauration par filtre terminée: {restored} fichiers restaurés, "
+            f"{len(errors)} erreurs"
+        )
+        return {"restored": restored, "errors": errors}
+
     def get_version_history(
         self, logical_path: str
     ) -> List[Dict[str, Any]]:

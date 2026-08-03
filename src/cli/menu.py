@@ -214,9 +214,10 @@ class CLI:
         print("  1. Restaurer la dernière version")
         print("  2. Restaurer une version spécifique")
         print("  3. Restaurer un dossier")
-        print("  4. Retour")
+        print("  4. Restaurer par filtre (date, extension)")
+        print("  5. Retour")
 
-        choice = input("\nChoix [1-4]: ").strip()
+        choice = input("\nChoix [1-5]: ").strip()
 
         if choice == "1":
             logical_path = input("Chemin du fichier: ").strip()
@@ -238,17 +239,49 @@ class CLI:
             else:
                 print("Échec de la restauration.")
         elif choice == "3":
-            print("Fonctionnalité en cours de développement.")
+            folder_path = input("Chemin du dossier: ").strip()
+            destination = input("Destination: ").strip()
+            versioner = Versioner()
+            result = versioner.restore_folder(folder_path, destination)
+            if result["restored"] > 0:
+                print(f"Dossier restauré: {result['restored']} fichiers")
+                if result["errors"]:
+                    print(f"Erreurs: {len(result['errors'])}")
+            else:
+                print("Aucun fichier trouvé.")
         elif choice == "4":
+            print("\nFiltres de restauration:")
+            extension = input("Extension (vide pour ignorer): ").strip() or None
+            date_from = input("Date début (YYYY-MM-DD, vide pour ignorer): ").strip() or None
+            date_to = input("Date fin (YYYY-MM-DD, vide pour ignorer): ").strip() or None
+            destination = input("Destination: ").strip()
+
+            filter_criteria = {
+                "extension": extension,
+                "date_from": date_from,
+                "date_to": date_to,
+            }
+
+            versioner = Versioner()
+            result = versioner.restore_by_filter(filter_criteria, destination)
+            if result["restored"] > 0:
+                print(f"Filtre appliqué: {result['restored']} fichiers restaurés")
+                if result["errors"]:
+                    print(f"Erreurs: {len(result['errors'])}")
+            else:
+                print("Aucun fichier ne correspond aux filtres.")
+        elif choice == "5":
             return
         else:
             print("Choix invalide.")
 
     def _verify(self) -> None:
-        """Vérification d'intégrité."""
+        """Vérification d'intégrité avec export de rapport."""
         print("\nVérification de l'intégrité...")
         db = get_database()
-        result = db.verify_integrity()
+
+        # Vérification complète avec export de rapport
+        result = db.export_integrity_report()
 
         if result["database_ok"]:
             print("✓ Base de données intacte")
@@ -261,6 +294,31 @@ class CLI:
             print("\nAvertissements:")
             for warning in result["warnings"]:
                 print(f"  - {warning}")
+
+        # Vérifier les CRC des archives
+        compressor = Compressor()
+        archive_result = compressor.verify_compressed_archives()
+
+        print(f"\n✓ Archives vérifiées: {archive_result['verified']}")
+        if archive_result["failed"] > 0:
+            print(f"✗ Archives corrompues: {archive_result['failed']}")
+            for error in archive_result["errors"]:
+                print(f"  - {error}")
+
+        # Afficher les statistiques
+        stats = result.get("statistics", {})
+        print(f"\nStatistiques:")
+        print(f"  Fichiers totaux: {stats.get('total_files', 0):,}")
+        print(f"  Versions totales: {stats.get('total_versions', 0):,}")
+        print(f"  Fichiers actifs: {stats.get('active_files', 0):,}")
+        print(f"  Taille totale: {stats.get('total_size', 0):,} octets")
+
+        # Afficher les chemins des rapports générés
+        reports = result.get("reports", {})
+        if reports.get("json"):
+            print(f"\n✓ Rapport JSON: {reports['json']}")
+        if reports.get("csv"):
+            print(f"✓ Rapport CSV: {reports['csv']}")
 
     def _stats(self) -> None:
         """Affichage des statistiques."""

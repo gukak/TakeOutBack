@@ -47,6 +47,24 @@ def check_portable_tools() -> bool:
     return True
 
 
+def check_crash_recovery() -> None:
+    """Vérifie et récupère après un éventuel crash."""
+    try:
+        db = get_database()
+        recovery_result = db.check_and_recover()
+        if recovery_result["recovered"]:
+            print("⚠️ Récupération après crash détectée:")
+            for step in recovery_result["recovery_steps"]:
+                print(f"  - {step}")
+            if recovery_result["errors"]:
+                for error in recovery_result["errors"]:
+                    print(f"  ✗ {error}")
+        elif recovery_result["recovery_steps"]:
+            print("ℹ️ Vérification post-crash terminée.")
+    except Exception as e:
+        print(f"ℹ️ Vérification post-crash: {e}")
+
+
 def run_setup() -> None:
     """Exécute l'installation initiale."""
     logger = setup_logger("setup", json_format=False)
@@ -131,9 +149,9 @@ def run_search(query: str) -> None:
 
 
 def run_verify() -> None:
-    """Exécute la vérification d'intégrité."""
+    """Exécute la vérification d'intégrité avec export de rapport."""
     db = get_database()
-    result = db.verify_integrity()
+    result = db.export_integrity_report()
 
     if result["database_ok"]:
         print("✓ Base de données intacte")
@@ -146,6 +164,21 @@ def run_verify() -> None:
         print("\nAvertissements:")
         for warning in result["warnings"]:
             print(f"  - {warning}")
+
+    # Afficher les statistiques
+    stats = result.get("statistics", {})
+    print(f"\nStatistiques:")
+    print(f"  Fichiers totaux: {stats.get('total_files', 0):,}")
+    print(f"  Versions totales: {stats.get('total_versions', 0):,}")
+    print(f"  Fichiers actifs: {stats.get('active_files', 0):,}")
+    print(f"  Taille totale: {stats.get('total_size', 0):,} octets")
+
+    # Afficher les chemins des rapports générés
+    reports = result.get("reports", {})
+    if reports.get("json"):
+        print(f"\n✓ Rapport JSON: {reports['json']}")
+    if reports.get("csv"):
+        print(f"✓ Rapport CSV: {reports['csv']}")
 
 
 def run_stats() -> None:
@@ -164,7 +197,32 @@ def run_stats() -> None:
 def run_update_tools() -> None:
     """Met à jour les outils portables."""
     print("\nVérification des mises à jour des outils...")
-    print("Fonctionnalité en cours de développement.")
+    from src.core.tools import ToolManager
+    manager = ToolManager()
+
+    updates = manager.check_updates()
+    for tool_name, info in updates.items():
+        status = "⚠️ Mise à jour disponible" if info["update_available"] else "✓ À jour"
+        print(f"  {tool_name}: {info['current_version']} → {info['latest_version']} [{status}]")
+
+    # Lancer les mises à jour si disponibles
+    for tool_name, info in updates.items():
+        if info["update_available"]:
+            print(f"\nTéléchargement de {tool_name}...")
+            success = manager.download_tool(tool_name)
+            if success:
+                print(f"✓ {tool_name} mis à jour avec succès")
+            else:
+                print(f"✗ Échec du téléchargement de {tool_name}")
+
+    results = manager.verify_tools()
+    if results["all_installed"]:
+        print("\n✓ Tous les outils sont installés et valides.")
+    else:
+        print("\n✗ Certains outils manquent ou sont invalides.")
+        for tool_name, info in results["tools"].items():
+            if not info["valid"]:
+                print(f"  - {tool_name}: non installé ou version invalide")
 
 
 def main() -> None:
@@ -223,6 +281,9 @@ def main() -> None:
     # Vérifier les outils portables
     if not check_portable_tools():
         sys.exit(1)
+
+    # Vérifier la récupération après crash
+    check_crash_recovery()
 
     # Exécuter la commande demandée
     if args.setup:

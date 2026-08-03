@@ -118,6 +118,9 @@ class Database:
         self._connection.execute("PRAGMA journal_mode=WAL")
         self._connection.execute("PRAGMA synchronous=NORMAL")
         self._connection.execute("PRAGMA foreign_keys=ON")
+        self._connection.execute("PRAGMA cache_size=-64000")
+        self._connection.execute("PRAGMA temp_store=MEMORY")
+        self._connection.execute("PRAGMA mmap_size=268435456")
 
     def close(self) -> None:
         """Ferme la connexion."""
@@ -437,6 +440,145 @@ class Database:
             logger = get_logger()
             logger.error(f"Échec de la réparation: {e}")
             return False
+
+    def export_integrity_report(
+        self,
+        report_dir: Optional[Path] = None,
+        formats: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Vérifie l'intégrité et exporte un rapport JSON/CSV."""
+        import json
+        import csv
+        from datetime import datetime
+
+        if formats is None:
+            formats = ["json", "csv"]
+        if report_dir is None:
+            from src.utils.path import get_reports_path
+            report_dir = get_reports_path()
+
+        report_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename_base = f"integrity_report_{timestamp}"
+
+        # Exécuter la vérification
+        result = self.verify_integrity()
+
+        # Ajouter les statistiques
+        stats = self.get_statistics()
+        result["statistics"] = stats
+
+        # Ajouter les opérations récentes
+        recent_ops = self.fetch_all(
+            "SELECT * FROM operations ORDER BY timestamp DESC LIMIT 50"
+        )
+        result["recent_operations"] = recent_ops
+
+        # Ajouter les fichiers avec erreurs (CRC invalide, etc.)
+        file_errors = self.fetch_all(
+            """
+            SELECT f.logical_path, f.filename, f.extension, f.size,
+                   f.crc32, f.sha256, f.archive_path, f.status,
+                   f.last_observed
+            FROM files f
+            WHERE f.status = 'deleted' OR f.crc32 IS NULL
+            ORDER BY f.last_observed DESC
+            LIMIT 100
+            """
+        )
+        result["file_issues"] = file_errors
+
+        # Exporter en JSON
+        json_path = None
+        if "json" in formats:
+            json_path = report_dir / f"{filename_base}.json"
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(result, f, indent=2, ensure_ascii=False, default=str)
+
+        # Exporter en CSV
+        csv_path = None
+        if "csv" in formats:
+            csv_path = report_dir / f"{filename_base}.csv"
+            with open(csv_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "type", "status", "message", "timestamp"
+                ])
+                # Ligne de statut global
+                status = "OK" if result["database_ok"] else "ERREUR"
+                writer.writerow(["global", status,
+                    "Base de données intacte" if result["database_ok"] else "Erreurs détectées",
+                    datetime.now().isoformat()])
+                # Erreurs
+                for error in result["errors"]:
+                    writer.writerow(["error", "ERROR", error,
+                        datetime.now().isoformat()])
+                # Avertissements
+                for warning in result["warnings"]:
+                    writer.writerow(["warning", "WARNING", warning,
+                        datetime.now().isoformat()])
+                # Statistiques
+                for key, value in stats.items():
+                    if isinstance(value, (int, float, str)):
+                        writer.writerow(["stat", key, str(value),
+                            datetime.now().isoformat()])
+
+        # Retourner les chemins des rapports
+        result["reports"] = {
+            "json": str(json_path) if json_path else None,
+            "csv": str(csv_path) if csv_path else None,
+        }
+
+        return result
+
+    def check_and_recover(self) -> Dict[str, Any]:
+        """Vérifie et récupère automatiquement après un crash."""
+        result = {
+            "recovered": False,
+            "recovery_steps": [],
+            "errors": [],
+        }
+
+        # Vérifier si un journal de transaction existe
+        journal_path = self.db_path.with_suffix(".db-journal")
+        wal_path = self.db_path.with_suffix(".db-wal")
+        shm_path = self.db_path.with_suffix(".db-shm")
+
+        if journal_path.exists() or wal_path.exists():
+            result["recovery_steps"].append("Journal de transaction détecté")
+
+            try:
+                # Fermer et rouvrir pour forcer la récupération WAL
+                self.close()
+                self.connect()
+
+                # Vérifier l'intégrité
+                integrity = self.fetch_one("PRAGMA integrity_check")
+                if integrity and integrity.get("integrity_check") == "ok":
+                    result["recovered"] = True
+                    result["recovery_steps"].append("Récupération WAL réussie")
+                else:
+                    result["errors"].append("Intégrité compromise après récupération WAL")
+
+            except Exception as e:
+                result["errors"].append(f"Erreur lors de la récupération: {str(e)}")
+
+        # Vérifier les opérations incomplètes
+        incomplete_ops = self.fetch_all(
+            "SELECT * FROM operations WHERE status = 'in_progress'"
+        )
+        if incomplete_ops:
+            result["recovery_steps"].append(
+                f"{len(incomplete_ops)} opération(s) incomplète(s) détectée(s)"
+            )
+            for op in incomplete_ops:
+                self.execute(
+                    "UPDATE operations SET status = 'interrupted' WHERE id = ?",
+                    (op["id"],)
+                )
+            result["recovered"] = True
+
+        return result
 
 
 # Instance globale
