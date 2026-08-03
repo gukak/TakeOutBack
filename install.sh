@@ -4,6 +4,11 @@
 
 set -e
 
+# Self-elevate: if the script is not executable, re-exec with bash explicitly
+if [ ! -x "$0" ]; then
+    exec bash "$0" "$@"
+fi
+
 INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"
 REPO_URL="https://github.com/gukak/TakeOutBack"
 ZIP_URL="https://github.com/gukak/TakeOutBack/archive/refs/heads/main.zip"
@@ -75,8 +80,8 @@ if [ ! -d "TakeOutBack" ]; then
     exit 1
 fi
 
-# Make all scripts executable
-chmod +x TakeOutBack/TakeOutBack.sh
+# Make all scripts executable (ZIP does not preserve permissions)
+find . -name "*.sh" -exec chmod +x {} \;
 chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 
 echo ""
