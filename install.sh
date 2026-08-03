@@ -79,35 +79,35 @@ if [ ! -d "TakeOutBack" ]; then
     exit 1
 fi
 
+# Move launcher scripts to drive root (they were inside TakeOutBack/ in the zip)
+if [ -f "TakeOutBack/TakeOutBack.sh" ]; then
+    mv "TakeOutBack/TakeOutBack.sh" "."
+fi
+if [ -f "TakeOutBack/install.sh" ]; then
+    mv "TakeOutBack/install.sh" "."
+fi
+
 # Make all scripts executable (ZIP does not preserve permissions)
 find . -name "*.sh" -exec chmod +x {} \;
 chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 
-# Detect if the filesystem supports executable permissions
-if [ -x "$INSTALL_DIR/TakeOutBack/TakeOutBack.sh" ]; then
-    SCRIPT_PREFIX=""
-    echo ""
-    echo "Filesystem supports executable permissions."
-else
-    SCRIPT_PREFIX="bash "
-    echo ""
-    echo "WARNING: Filesystem does not support executable permissions"
-    echo "(likely FAT32/exFAT). You must use 'bash' to run scripts."
-fi
+# Create Incoming/ and Archive/ at drive root
+mkdir -p Incoming Archive
 
 echo ""
 echo "=== Installation complete ==="
 echo ""
 echo "Created structure:"
+echo "  $INSTALL_DIR/TakeOutBack.sh  - Launcher script"
 echo "  $INSTALL_DIR/TakeOutBack/    - Software"
-echo "  $INSTALL_DIR/Incoming/       - Exports to process"
-echo "  $INSTALL_DIR/Archive/        - Archives"
+echo "  $INSTALL_DIR/Incoming/       - Drop Takeout exports here"
+echo "  $INSTALL_DIR/Archive/        - Compressed archives"
 echo ""
 echo "Run TakeOutBack with:"
-echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh"
+echo "  bash $INSTALL_DIR/TakeOutBack.sh"
 echo ""
 echo "Non-interactive mode:"
-echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh import"
-echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh search <name>"
-echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh verify"
-echo "  $SCRIPT_PREFIX$INSTALL_DIR/TakeOutBack/TakeOutBack.sh stats"
+echo "  bash $INSTALL_DIR/TakeOutBack.sh import"
+echo "  bash $INSTALL_DIR/TakeOutBack.sh search <name>"
+echo "  bash $INSTALL_DIR/TakeOutBack.sh verify"
+echo "  bash $INSTALL_DIR/TakeOutBack.sh stats"
