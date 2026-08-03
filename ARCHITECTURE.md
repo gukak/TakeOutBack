@@ -1,287 +1,287 @@
-# Architecture TakeOutBack
+# TakeOutBack Architecture
 
-## Résumé
+## Summary
 
-TakeOutBack est une application portable d'archivage de l'historique Google Takeout. Elle permet de conserver l'intégralité des données Google sur un disque externe, avec versionnement, recherche rapide et restauration ciblée.
+TakeOutBack is a portable application for archiving the complete history of Google Takeout exports on an external drive. It preserves all Google data with versioning, fast search, and targeted restoration.
 
-## Architecture retenue
+## Architecture Approach
 
-### Approche : Dépôt plat + compression sélective par lot
+### Approach: Flat storage + selective batch compression + SQLite index
 
-**Stockage décompressé en accès rapide + compression périodique par lot + index SQLite pour la recherche.**
+**Decompressed files for fast access + periodic batch compression + SQLite index for search.**
 
-### Justification
+### Rationale
 
-L'approche D (dépôt plat avec compression sélective) a été retenue car :
+The flat storage approach (Approach D) was chosen because:
 
-1. **Performance HDD** : Les fichiers sont décompressés pour un accès rapide. La compression est appliquée périodiquement par lot, pas à chaque import.
+1. **HDD Performance**: Files are decompressed for fast access. Compression is applied periodically in batches, not at each import.
 
-2. **Recherche instantanée** : L'index SQLite permet des recherches rapides sans parcourir les fichiers.
+2. **Instant Search**: SQLite index enables fast searches without scanning files.
 
-3. **Versionnement naturel** : Les fichiers sont versionnés par suffixe (`nom_v1.ext`, `nom_v2.ext`), simple et compatible.
+3. **Natural Versioning**: Files are versioned by suffix (`name_v1.ext`, `name_v2.ext`), simple and compatible.
 
-4. **Pas de décompression massive** : Les exports Takeout ne sont jamais entièrement décompressés. Seuls les fichiers nouveaux ou modifiés sont extraits.
+4. **No Massive Decompression**: Takeout exports are never fully decompressed. Only new or modified files are extracted.
 
-5. **Évolutivité** : L'architecture supporte plusieurs millions de fichiers et plusieurs téraoctets.
+5. **Scalability**: Architecture supports several million files and multiple terabytes.
 
-## Structure de base de données
+## Database Structure
 
-### Tables principales
+### Main Tables
 
 #### `files`
-Stocke les métadonnées de chaque fichier unique.
+Stores metadata for each unique file.
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | INTEGER | Clé primaire |
-| logical_path | TEXT | Chemin relatif dans l'archive |
-| filename | TEXT | Nom de fichier seul |
-| extension | TEXT | Extension sans le point |
-| size | INTEGER | Taille en octets |
-| crc32 | INTEGER | CRC32 de l'archive ZIP |
-| sha256 | TEXT | Hash SHA256 (calculé si nécessaire) |
-| archive_path | TEXT | Chemin vers l'archive source |
-| archive_crc | TEXT | CRC de l'archive elle-même |
-| discovery_date | TEXT | Première découverte |
-| last_observed | TEXT | Dernière observation |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER | Primary key |
+| logical_path | TEXT | Relative path within archive |
+| filename | TEXT | Filename only |
+| extension | TEXT | Extension without dot |
+| size | INTEGER | Size in bytes |
+| crc32 | INTEGER | CRC32 of ZIP archive |
+| sha256 | TEXT | SHA256 hash (calculated if needed) |
+| archive_path | TEXT | Path to source archive |
+| archive_crc | TEXT | CRC of the archive itself |
+| discovery_date | TEXT | First discovery |
+| last_observed | TEXT | Last observation |
 | status | TEXT | active, archived, deleted |
-| takeout_id | TEXT | Lien vers l'export d'origine |
-| metadata_json | TEXT | Métadonnées JSON (EXIF, etc.) |
-| created_at | TEXT | Date de création (métadonnée) |
-| modified_at | TEXT | Date de modification |
+| takeout_id | TEXT | Link to original export |
+| metadata_json | TEXT | JSON metadata (EXIF, etc.) |
+| created_at | TEXT | Creation date (metadata) |
+| modified_at | TEXT | Modification date |
 
 #### `versions`
-Stocke chaque version d'un fichier.
+Stores each version of a file.
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | INTEGER | Clé primaire |
-| file_id | INTEGER | Référence vers `files.id` |
-| version | INTEGER | Numéro de version (1, 2, 3...) |
-| archive_path | TEXT | Chemin vers l'archive de cette version |
-| logical_path | TEXT | Chemin logique dans l'archive |
-| size | INTEGER | Taille en octets |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER | Primary key |
+| file_id | INTEGER | Reference to `files.id` |
+| version | INTEGER | Version number (1, 2, 3...) |
+| archive_path | TEXT | Path to this version's archive |
+| logical_path | TEXT | Logical path within archive |
+| size | INTEGER | Size in bytes |
 | crc32 | INTEGER | CRC32 |
-| sha256 | TEXT | Hash SHA256 |
-| takeout_id | TEXT | Lien vers l'export d'origine |
-| discovered_at | TEXT | Date de découverte |
+| sha256 | TEXT | SHA256 hash |
+| takeout_id | TEXT | Link to original export |
+| discovered_at | TEXT | Discovery date |
 | status | TEXT | active, archived, deleted |
-| is_current | BOOLEAN | Version actuelle |
+| is_current | BOOLEAN | Current version |
 
 #### `takeouts`
-Stocke les informations sur chaque export Takeout.
+Stores information about each Takeout export.
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | TEXT | Identifiant unique (hash ou date) |
-| name | TEXT | Nom du fichier/dossier Takeout |
-| import_date | TEXT | Date d'import |
-| file_count | INTEGER | Nombre de fichiers |
-| total_size | INTEGER | Taille totale |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT | Unique identifier (hash or date) |
+| name | TEXT | Takeout file/folder name |
+| import_date | TEXT | Import date |
+| file_count | INTEGER | Number of files |
+| total_size | INTEGER | Total size |
 | status | TEXT | pending, processing, processed, error |
 | notes | TEXT | Notes |
 
 #### `operations`
-Journal des opérations effectuées.
+Operation log.
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | INTEGER | Clé primaire |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER | Primary key |
 | operation_type | TEXT | import, restore, verify, update |
-| timestamp | TEXT | Date de l'opération |
-| duration_seconds | REAL | Durée en secondes |
-| files_processed | INTEGER | Nombre de fichiers traités |
-| files_added | INTEGER | Nombre de fichiers ajoutés |
-| files_modified | INTEGER | Nombre de fichiers modifiés |
-| files_deleted | INTEGER | Nombre de fichiers supprimés |
-| errors | INTEGER | Nombre d'erreurs |
-| details | TEXT | JSON avec détails |
+| timestamp | TEXT | Operation date |
+| duration_seconds | REAL | Duration in seconds |
+| files_processed | INTEGER | Number of files processed |
+| files_added | INTEGER | Number of files added |
+| files_modified | INTEGER | Number of files modified |
+| files_deleted | INTEGER | Number of files deleted |
+| errors | INTEGER | Number of errors |
+| details | TEXT | JSON with details |
 | status | TEXT | completed, failed, interrupted |
 
-### Index
+### Indexes
 
-- `idx_files_logical_path` : Recherche par chemin
-- `idx_files_sha256` : Recherche par hash
-- `idx_files_status` : Filtrage par statut
-- `idx_files_discovery_date` : Tri par date de découverte
-- `idx_files_last_observed` : Tri par dernière observation
-- `idx_files_extension` : Filtrage par extension
-- `idx_files_takeout_id` : Lien vers l'export
-- `idx_versions_file_id` : Liens vers les versions
-- `idx_versions_is_current` : Version actuelle
-- `idx_takeouts_import_date` : Tri par date d'import
-- `idx_operations_timestamp` : Tri par date d'opération
-- `idx_operations_type` : Filtrage par type
+- `idx_files_logical_path`: Search by path
+- `idx_files_sha256`: Search by hash
+- `idx_files_status`: Filter by status
+- `idx_files_discovery_date`: Sort by discovery date
+- `idx_files_last_observed`: Sort by last observation
+- `idx_files_extension`: Filter by extension
+- `idx_files_takeout_id`: Link to export
+- `idx_versions_file_id`: Links to versions
+- `idx_versions_is_current`: Current version
+- `idx_takeouts_import_date`: Sort by import date
+- `idx_operations_timestamp`: Sort by operation date
+- `idx_operations_type`: Filter by type
 
-### Vue `current_files`
+### View `current_files`
 
-Vue optimisée pour accéder rapidement à la dernière version de chaque fichier.
+Optimized view for fast access to the latest version of each file.
 
-## Stratégie de versionnement
+## Versioning Strategy
 
-### Règles
+### Rules
 
-1. **Nouveau fichier** : `nom.ext` (version 1 implicite)
-2. **Fichier modifié** :
-   - Ancienne version → `nom_v1.ext`
-   - Nouvelle version → `nom.ext`
-3. **Fichier supprimé** : Conservé dans `Archive/deleted/` avec métadonnées
-4. **Maximum de versions** : Configurable (par défaut : 10)
+1. **New file**: `name.ext` (implicit version 1)
+2. **Modified file**:
+   - Old version → `name_v1.ext`
+   - New version → `name.ext`
+3. **Deleted file**: Preserved in `Archive/deleted/` with metadata
+4. **Maximum versions**: Configurable (default: 10)
 
-### Exemple
+### Example
 
 ```
 Archive/raw/Photos/Vacation/
-├── beach.jpg          # Version actuelle (v3)
+├── beach.jpg          # Current version (v3)
 ├── beach_v1.jpg       # Version 1
 └── beach_v2.jpg       # Version 2
 ```
 
-## Stratégie de compression
+## Compression Strategy
 
-### Règles de compression
+### Compression Rules
 
-| Type de fichier | Compression | Raison |
-|----------------|-------------|--------|
-| Photos (JPG, PNG) | Non compressé | Déjà compressés |
-| Vidéos (MP4, MOV) | Non compressé | Déjà compressés |
-| Documents (DOCX, PDF) | Compression 7z | Gain 50-70% |
-| Textes (TXT, CSV) | Compression 7z | Gain 80-90% |
-| JSON/XML | Compression 7z | Gain 60-80% |
-| Emails (MBOX) | Compression 7z | Gain 40-60% |
+| File Type | Compression | Reason |
+|-----------|-------------|--------|
+| Photos (JPG, PNG) | None | Already compressed |
+| Videos (MP4, MOV) | None | Already compressed |
+| Documents (DOCX, PDF) | 7z compression | 50-70% gain |
+| Texts (TXT, CSV) | 7z compression | 80-90% gain |
+| JSON/XML | 7z compression | 60-80% gain |
+| Emails (MBOX) | 7z compression | 40-60% gain |
 
-### Processus
+### Process
 
-1. **Import** : Fichiers décompressés dans `Archive/raw/`
-2. **Analyse** : Classification par type
-3. **Compression nocturne** : Groupes par type + date → archive 7z dans `Archive/compressed/`
-4. **Vérification** : CRC vérifié avant suppression des fichiers source
-5. **Mise à jour** : Index SQLite mis à jour
+1. **Import**: Decompressed files into `Archive/raw/`
+2. **Analysis**: Classification by type
+3. **Nightly compression**: Group by type + date → 7z archive in `Archive/compressed/`
+4. **Verification**: CRC verified before deleting source files
+5. **Update**: SQLite index updated
 
-## Stratégie de sécurité
+## Security Strategy
 
-### Niveau 1 : Sécurité physique (actuel)
-- Disque dur externe dans un endroit sécurisé
-- Pas de chiffrement pour l'instant
+### Level 1: Physical Security (current)
+- External hard drive in a secure location
+- No encryption for now
 
-### Niveau 2 : Intégrité des données
-- CRC32 pour vérification rapide des archives ZIP
-- SHA256 pour vérification approfondie (calculé à la demande)
-- Journal des opérations dans SQLite
-- Vérification d'intégrité périodique
+### Level 2: Data Integrity
+- CRC32 for fast ZIP archive verification
+- SHA256 for thorough verification (calculated on demand)
+- Operation journal in SQLite
+- Periodic integrity verification
 
-### Niveau 3 : Chiffrement futur (optionnel)
+### Level 3: Future Encryption (optional)
 - AES-256 via `cryptography` library
-- Clé dérivée via PBKDF2
-- Stockage de la clé dans un fichier local chiffré
+- Key derived via PBKDF2
+- Key stored in encrypted local file
 
-## Stratégie de mise à jour
+## Update Strategy
 
-### Outils embarqués
-- **Python** : version portable téléchargée au premier lancement
-- **7-Zip** : version portable (`7zz.exe`/`7zz`) téléchargée
-- **Mises à jour** : détectées et appliquées automatiquement
+### Embedded Tools
+- **Python**: Portable version downloaded on first launch
+- **7-Zip**: Portable version (`7zz.exe`/`7zz`) downloaded
+- **Updates**: Detected and applied automatically
 
-### Processus
-1. Au démarrage : vérification des versions
-2. Comparaison avec versions stables connues
-3. Téléchargement si mise à jour disponible
-4. Vérification CRC des téléchargements
-5. Mise à jour atomique (nouvelle version dans `Tools/temp/`, remplacement après vérification)
-6. Rollback automatique en cas d'échec
+### Process
+1. On startup: version check
+2. Comparison with known stable versions
+3. Download if update available
+4. CRC verification of downloads
+5. Atomic update (new version in `Tools/temp/`, replace after verification)
+6. Automatic rollback on failure
 
-## Stratégie de reprise après incident
+## Crash Recovery Strategy
 
-### Transactions SQLite
-- Toutes les opérations sont transactionnelles
-- En cas de crash : rollback automatique
-- `PRAGMA journal_mode=WAL` pour meilleure tolérance
+### SQLite Transactions
+- All operations are transactional
+- On crash: automatic rollback
+- `PRAGMA journal_mode=WAL` for better tolerance
 
-### Fichiers temporaires
-- Toutes les écritures passent par des fichiers temporaires
-- Renommage atomique à la fin
-- Nettoyage automatique au redémarrage
+### Temporary Files
+- All writes go through temporary files
+- Atomic rename at the end
+- Automatic cleanup on restart
 
-### Journalisation
-- Chaque opération est journalisée dans `operations`
-- En cas de crash, reprise depuis la dernière opération complète
-- Logs détaillés dans `Logs/`
+### Logging
+- Each operation is logged in `operations`
+- On crash, resume from last complete operation
+- Detailed logs in `Logs/`
 
-### Vérification automatique
-- Au démarrage : vérification de l'intégrité de SQLite
-- En cas de corruption détectée : tentative de réparation automatique
-- Si échec : restauration depuis la dernière sauvegarde de la base
+### Automatic Verification
+- On startup: SQLite integrity check
+- On detected corruption: automatic repair attempt
+- On failure: restore from last database backup
 
-## Stratégie de recherche
+## Search Strategy
 
-### Index SQLite
-- Recherche par nom, extension, chemin, date, hash
-- Index optimisés pour performance
-- Recherche en mémoire pour les requêtes fréquentes
+### SQLite Index
+- Search by name, extension, path, date, hash
+- Optimized indexes for performance
+- In-memory search for frequent queries
 
 ### Performance
-- Temps de recherche < 1 seconde pour des millions de fichiers
-- Consommation mémoire < 500 MB
-- Requêtes SQL optimisées avec index
+- Search time < 1 second for millions of files
+- Memory usage < 500 MB
+- Optimized SQL queries with indexes
 
-## Stratégie de restauration
+## Restoration Strategy
 
-### Modes de restauration
-1. **Dernière version** : Restauration du fichier dans son état actuel
-2. **Version spécifique** : Restauration d'une version historique
-3. **Dossier complet** : Restauration d'un dossier entier
-4. **Par filtre** : Restauration basée sur des critères (date, extension, etc.)
+### Restoration Modes
+1. **Latest version**: Restore file in current state
+2. **Specific version**: Restore historical version
+3. **Complete folder**: Restore entire folder
+4. **By filter**: Restore based on criteria (date, extension, etc.)
 
-### Optimisations
-- Pas de décompression massive
-- Restauration ciblée uniquement des fichiers demandés
-- Vérification CRC après restauration
+### Optimizations
+- No massive decompression
+- Targeted restoration of only requested files
+- CRC verification after restoration
 
-## Stratégie de performance
+## Performance Strategy
 
-### Optimisations HDD
-- Accès séquentiels privilégiés
-- Regroupement par type de fichier
-- Index SQLite en mémoire pour les recherches fréquentes
-- Batch processing (lots de 1000 fichiers)
+### HDD Optimizations
+- Sequential access prioritized
+- Grouping by file type
+- SQLite index in memory for frequent searches
+- Batch processing (1000 files at a time)
 
-### Optimisations SQL
-- Index adaptés aux requêtes courantes
-- Requêtes optimisées
-- VACUUM périodique pour maintenir la base compacte
+### SQL Optimizations
+- Indexes adapted to common queries
+- Optimized queries
+- Periodic VACUUM to keep database compact
 
-### Optimisations mémoire
-- Lecture par lots
-- Pas de chargement complet des archives en mémoire
-- Nettoyage automatique des ressources
+### Memory Optimizations
+- Batch reading
+- No full archive loading in memory
+- Automatic resource cleanup
 
-## Stratégie de test
+## Testing Strategy
 
-### Tests unitaires
-- Tests de chaque module indépendant
-- Couverture > 80%
+### Unit Tests
+- Test each independent module
+- Coverage > 80%
 
-### Tests d'intégration
-- Tests de flux complets (import → recherche → restauration)
-- Tests de résilience (crash, corruption)
+### Integration Tests
+- Complete flow tests (import → search → restore)
+- Resilience tests (crash, corruption)
 
-### Tests de performance
-- Tests de charge avec millions de fichiers
-- Tests de temps de réponse
+### Performance Tests
+- Load tests with millions of files
+- Response time tests
 
-## Stratégie de maintenance
+## Maintenance Strategy
 
-### Mises à jour régulières
-- Corrections de bugs
-- Améliorations de performance
-- Nouvelles fonctionnalités
+### Regular Updates
+- Bug fixes
+- Performance improvements
+- New features
 
-### Compatibilité
-- Support de nouvelles versions de Windows/Linux
-- Support de nouvelles versions de Python/7-Zip
-- Adaptation aux évolutions de Google Takeout
+### Compatibility
+- Support for new Windows/Linux versions
+- Support for new Python/7-Zip versions
+- Adaptation to Google Takeout changes
 
 ### Documentation
-- Mise à jour de la documentation à chaque version
-- Guides de mise à jour
-- Notes de version
+- Documentation updated with each version
+- Update guides
+- Release notes

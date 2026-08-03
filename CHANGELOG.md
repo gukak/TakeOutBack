@@ -1,31 +1,42 @@
 # Changelog
 
-Tous les changements notables seront documentés dans ce fichier.
+All notable changes to this project will be documented in this file.
 
-Le format est basé sur [Keep a Changelog](https://keepachangelog.com/),
-et ce projet adhère aux [Conventional Commits](https://www.conventionalcommits.org/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## [1.0.0] - 2024-01-15
 
-### Ajouté
-- Structure initiale du projet
-- Analyse d'architecture complète
-- Configuration Git/GitHub
-- Documentation de base (README, ARCHITECTURE, CHANGELOG, GUIDE_DEPLOIEMENT)
-- Schéma de base de données SQLite
-- Système de versionnement
-- Interface CLI de base
-- Outils portables (Python, 7-Zip)
-- Tests unitaires de base
+### Added
+- Initial project structure
+- Complete architecture analysis
+- Git/GitHub configuration
+- Basic documentation (README, ARCHITECTURE, CHANGELOG, GUIDE_DEPLOIEMENT)
+- SQLite database schema
+- Versioning system
+- Basic CLI interface
+- Portable tools (Python, 7-Zip)
+- Basic unit tests
 
-### Changé
-- Nom du projet : GoogleTakeout → TakeOutBack
+### Changed
+- Project name: GoogleTakeout → TakeOutBack
 
-### Supprimé
-- Aucune suppression pour l'instant
+### Removed
+- No removals yet
 
-### Corrigé
-- Aucune correction pour l'instant
+### Fixed
+- No fixes yet
 
-### Sécurisé
-- Aucune vulnérabilité identifiée pour l'instant
+### Secured
+- No vulnerabilities identified yet
+
+## [Unreleased]
+
+### Added
+- Integrity verification with JSON/CSV reports
+- Restore by folder and by filter
+- Crash recovery system
+- Tool update management
+- FAT32/exFAT filesystem detection
+- Self-executable script support
+- Portable installation without git
