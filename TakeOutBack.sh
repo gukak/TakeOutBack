@@ -1,16 +1,21 @@
 #!/bin/bash
 # TakeOutBack launcher script
-# Place at the root of the external drive
+# Can be called from the drive root or from within TakeOutBack/
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$SCRIPT_DIR/TakeOutBack"
 
-if [ ! -d "$PROJECT_DIR" ]; then
-    echo "ERROR: TakeOutBack folder not found in $SCRIPT_DIR"
-    echo "Install TakeOutBack with: bash $SCRIPT_DIR/install.sh"
-    exit 1
+# If src/ exists in SCRIPT_DIR, we are already inside TakeOutBack/
+if [ -d "$SCRIPT_DIR/src" ]; then
+    PROJECT_DIR="$SCRIPT_DIR"
+else
+    PROJECT_DIR="$SCRIPT_DIR/TakeOutBack"
+    if [ ! -d "$PROJECT_DIR" ]; then
+        echo "ERROR: TakeOutBack folder not found in $SCRIPT_DIR"
+        echo "Install TakeOutBack with: bash $SCRIPT_DIR/install.sh"
+        exit 1
+    fi
 fi
 
 cd "$PROJECT_DIR"
