@@ -4,26 +4,32 @@ Tools/*/7zip/
 Tools/*/tools.*
 
 # Base de données
-Database/*.db
-Database/*.db-journal
-Database/*.db-wal
-Database/*.db-shm
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
 
 # Logs
-Logs/*
-!Logs/.gitkeep
+logs/*
+!logs/.gitkeep
 
 # Rapports générés
-Reports/*
-!Reports/.gitkeep
+reports/*
+!reports/.gitkeep
 
 # État temporaire
-Temp/*
-!Temp/.gitkeep
+temp/*
+!temp/.gitkeep
 
 # Configuration locale (à ne pas committer)
-Config/config.json
-Config/version.json
+config/config.json
+config/version.json
+
+# Données à la racine (à côté de TakeOutBack/)
+Incoming/
+Archive/
+!Incoming/.gitkeep
+!Archive/.gitkeep
 
 # Fichiers Python compilés
 __pycache__/

@@ -16,88 +16,72 @@ Application portable d'archivage de l'historique Google Takeout.
 ## Structure
 
 ```
-TakeOutBack/
-├── src/              # Code source
-├── tools/            # Outils portables (Python, 7-Zip)
-├── incoming/         # Exports Takeout à analyser
-├── archive/          # Données archivées
-│   ├── raw/          # Fichiers décompressés (accès rapide)
-│   ├── compressed/   # Archives compressées par lot
-│   └── deleted/      # Fichiers supprimés conservés
-├── database/         # Base SQLite
-├── config/           # Configuration
-├── logs/             # Journalisation
-├── reports/          # Rapports générés
-├── temp/             # Fichiers temporaires
-├── state/            # État de l'application
-└── tests/            # Tests unitaires
+D:/ (racine du disque)
+├── TakeOutBack/              # Logiciel
+│   ├── src/                  # Code source
+│   ├── tools/                # Outils portables (Python, 7-Zip)
+│   ├── database/             # Base SQLite
+│   ├── config/               # Configuration
+│   ├── logs/                 # Journalisation
+│   ├── reports/              # Rapports générés
+│   └── ...
+├── Incoming/                 # Exports Takeout à traiter
+│   └── google-takeout-*.zip  # Déposez vos exports ici
+└── Archive/                  # Archives compressées
+    ├── raw/                  # Fichiers décompressés (accès rapide)
+    ├── compressed/           # Archives compressées par lot
+    └── deleted/              # Fichiers supprimés conservés
 ```
 
-## Installation
+## Installation rapide
 
-1. Cloner le dépôt :
-   ```bash
-   git clone https://github.com/gukak/TakeOutBack.git
-   ```
+### Linux
 
-2. Copier le dossier sur le disque externe
+```bash
+# Sur le disque externe, installez TakeOutBack
+cd /media/votre_disque
+curl -fsSL https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.sh | bash
+```
 
-3. Lancer l'installation :
-   ```bash
-   # Windows
-   run.bat --setup
+### Windows (PowerShell)
 
-   # Linux
-   ./run.sh --setup
-   ```
+```powershell
+# Sur le disque externe, installez TakeOutBack
+cd D:\
+iwr -useb https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.ps1 | iex
+```
 
-4. Suivre les instructions
+### Installation manuelle
+
+1. Téléchargez le ZIP depuis [GitHub](https://github.com/gukak/TakeOutBack/archive/refs/heads/main.zip)
+2. Décompressez et renommez le dossier en `TakeOutBack`
+3. Placez-le à la racine de votre disque externe
+4. Créez les dossiers `Incoming/` et `Archive/` à côté de `TakeOutBack/`
 
 ## Utilisation
 
+### Lancement
+
 ```bash
 # Menu interactif
-python src/main.py
+./TakeOutBack.sh
 
 # Mode non interactif
-python src/main.py --import
-python src/main.py --verify
-python src/main.py --stats
-python src/main.py --search "photo.jpg"
+./TakeOutBack.sh import
+./TakeOutBack.sh search "photo.jpg"
+./TakeOutBack.sh verify
+./TakeOutBack.sh stats
 ```
 
-## Menu interactif
+### Workflow typique
 
-1. Initialiser le dépôt
-2. Analyser de nouveaux Google Takeout
-3. Rechercher
-4. Restaurer
-5. Vérifier l'intégrité
-6. Afficher les statistiques
-7. Exporter un inventaire
-8. Mettre à jour les outils portables
-9. Paramètres
-10. Quitter
+1. Déposez vos exports Google Takeout dans `Incoming/`
+2. Lancez `./TakeOutBack.sh import` pour les analyser
+3. Recherchez vos fichiers avec `./TakeOutBack.sh search "nom"`
+4. Restaurez via le menu interactif ou la ligne de commande
+5. Vérifiez l'intégrité avec `./TakeOutBack.sh verify`
 
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Documentation technique détaillée
 - [CHANGELOG.md](CHANGELOG.md) - Historique des versions
-- [GUIDE_DEPLOIEMENT.md](GUIDE_DEPLOIEMENT.md) - Guide opérationnel
-
-## Configuration
-
-Tous les paramètres sont dans `Config/config.json` (créé automatiquement lors du premier lancement).
-
-## Outils portables
-
-Le projet utilise des outils portables stockés dans `Tools/` :
-
-- **Python** : 3.11+ (téléchargé automatiquement)
-- **7-Zip** : 23.01+ (téléchargé automatiquement)
-
-Aucun outil système n'est utilisé. Le programme fonctionne même sans Python installé sur la machine hôte.
-
-## Licence
-
-À définir.

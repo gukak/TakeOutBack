@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.utils.path import (
     get_root_path,
+    get_data_path,
     get_python_binary,
     get_7zip_binary,
     detect_os,
@@ -72,10 +73,11 @@ def run_setup() -> None:
 
     # Créer toute l'arborescence
     directories = [
-        get_root_path() / "incoming",
-        get_root_path() / "archive" / "raw",
-        get_root_path() / "archive" / "compressed",
-        get_root_path() / "archive" / "deleted",
+        get_data_path() / "Incoming",
+        get_data_path() / "Archive",
+        get_data_path() / "Archive" / "raw",
+        get_data_path() / "Archive" / "compressed",
+        get_data_path() / "Archive" / "deleted",
         get_root_path() / "database",
         get_root_path() / "config",
         get_root_path() / "logs",
