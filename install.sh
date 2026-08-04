@@ -108,28 +108,28 @@ else
     exit 1
 fi
 
-# Download Python
-echo "Downloading Python..."
-$DOWNLOAD_CMD "$TOOLS_DIR/python/Python-3.13.14.tgz" "https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/python/Python-3.13.14.tgz"
-if [ ! -f "$TOOLS_DIR/python/Python-3.13.14.tgz" ]; then
-    echo "ERROR: Failed to download Python."
+# Download Python portable (pre-compiled, from python-build-standalone)
+echo "Downloading Python portable..."
+$DOWNLOAD_CMD "$TOOLS_DIR/python/python.tar.zst" "https://github.com/astral-sh/python-build-standalone/releases/download/20260728/cpython-3.10.20%2B20260728-x86_64-unknown-linux-gnu-install_only.tar.zst"
+if [ ! -f "$TOOLS_DIR/python/python.tar.zst" ]; then
+    echo "ERROR: Failed to download Python portable."
     exit 1
 fi
 
-echo "Extracting Python..."
-if command -v tar &> /dev/null; then
-    tar -xzf "$TOOLS_DIR/python/Python-3.13.14.tgz" -C "$TOOLS_DIR/python"
-    mv "$TOOLS_DIR/python/Python-3.13.14"/* "$TOOLS_DIR/python/" 2>/dev/null || true
-    rm -rf "$TOOLS_DIR/python/Python-3.13.14"
-    rm -f "$TOOLS_DIR/python/Python-3.13.14.tgz"
-elif command -v 7z &> /dev/null; then
-    7z x "$TOOLS_DIR/python/Python-3.13.14.tgz" -o"$TOOLS_DIR/python" > /dev/null
-    mv "$TOOLS_DIR/python/Python-3.13.14"/* "$TOOLS_DIR/python/" 2>/dev/null || true
-    rm -rf "$TOOLS_DIR/python/Python-3.13.14"
-    rm -f "$TOOLS_DIR/python/Python-3.13.14.tgz"
-else
-    echo "ERROR: tar or 7z is required to extract Python."
-    exit 1
+echo "Extracting Python portable..."
+tar -xIf "$TOOLS_DIR/python/python.tar.zst" -C "$TOOLS_DIR/python"
+rm -f "$TOOLS_DIR/python/python.tar.zst"
+
+# Python portable is extracted with a prefix directory, flatten it
+PYTHON_EXTRACTED=$(find "$TOOLS_DIR/python" -mindepth 1 -maxdepth 1 -type d | head -1)
+if [ -n "$PYTHON_EXTRACTED" ] && [ "$PYTHON_EXTRACTED" != "$TOOLS_DIR/python" ]; then
+    mv "$PYTHON_EXTRACTED"/* "$TOOLS_DIR/python/" 2>/dev/null || true
+    rmdir "$PYTHON_EXTRACTED"
+fi
+
+# Create symlink python3 -> python
+if [ ! -f "$TOOLS_DIR/python/python3" ]; then
+    ln -s python "$TOOLS_DIR/python/python3"
 fi
 
 # Download 7-Zip
