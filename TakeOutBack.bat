@@ -3,6 +3,7 @@ setlocal
 
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_DIR=%SCRIPT_DIR%TakeOutBack"
+set "PYTHON=%PROJECT_DIR%\tools\windows\python\python.exe"
 
 if not exist "%PROJECT_DIR%" (
     echo ERROR: TakeOutBack folder not found in %SCRIPT_DIR%
@@ -11,25 +12,32 @@ if not exist "%PROJECT_DIR%" (
     exit /b 1
 )
 
+if not exist "%PYTHON%" (
+    echo ERROR: Python not found at %PYTHON%
+    echo Run setup.py first to install portable tools.
+    pause
+    exit /b 1
+)
+
 cd /d "%PROJECT_DIR%"
 
 if "%1"=="import" (
     echo Importing Takeout exports...
-    python src/main.py --import
+    "%PYTHON%" src\main.py --import
 ) else if "%1"=="search" (
     if "%2"=="" (
         echo Usage: TakeOutBack.bat search ^<filename^>
         exit /b 1
     )
-    python src/main.py --search "%2"
+    "%PYTHON%" src\main.py --search "%2"
 ) else if "%1"=="verify" (
     echo Verifying integrity...
-    python src/main.py --verify
+    "%PYTHON%" src\main.py --verify
 ) else if "%1"=="stats" (
-    python src/main.py --stats
+    "%PYTHON%" src\main.py --stats
 ) else if "%1"=="update-tools" (
     echo Updating tools...
-    python src/main.py --update-tools
+    "%PYTHON%" src\main.py --update-tools
 ) else (
     echo === TakeOutBack ===
     echo.
@@ -43,5 +51,5 @@ if "%1"=="import" (
     echo   update-tools        Update tools
     echo   (no args)           Launch interactive menu
     echo.
-    python src/main.py
+    "%PYTHON%" src\main.py
 )
