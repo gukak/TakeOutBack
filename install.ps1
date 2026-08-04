@@ -115,7 +115,7 @@ try {
 
 # Download 7-Zip
 Write-Host "Downloading 7-Zip..." -ForegroundColor Cyan
-$sevenZipUrl = "https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z2301.exe"
+$sevenZipUrl = "https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z.exe"
 $sevenZipDest = "$TOOLS_DIR\7zip\7z.exe"
 try {
     Invoke-WebRequest -Uri $sevenZipUrl -OutFile $sevenZipDest -UseBasicParsing

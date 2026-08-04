@@ -70,7 +70,7 @@ class ToolManager:
         "7zip": ToolVersion(
             name="7zip",
             version="23.01",
-            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z2301.exe",
+            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z.exe",
             linux_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/7zip/7z2301-linux-x64.tar.xz",
             windows_checksum="",
             linux_checksum="",
