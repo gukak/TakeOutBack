@@ -70,9 +70,6 @@ if (-not (Test-Path "TakeOutBack")) {
     exit 1
 }
 
-# Make scripts executable (no-op on Windows but harmless)
-icacls "TakeOutBack\TakeOutBack.bat" /grant Everyone:F 2>$null
-
 Write-Host ""
 Write-Host "=== Installation complete ===" -ForegroundColor Green
 Write-Host ""
