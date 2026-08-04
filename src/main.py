@@ -8,8 +8,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# Ajouter le dossier src au path
-sys.path.insert(0, str(Path(__file__).parent))
+# Ajouter le dossier parent (TakeOutBack/) au path pour que les imports work
+# quand on lance python src/main.py depuis le dossier TakeOutBack/
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.utils.path import (
     get_root_path,
