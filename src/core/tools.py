@@ -69,6 +69,24 @@ class ToolManager:
         self.tools_dir = get_tools_path("linux")
         self.temp_dir = get_temp_path()
         self.version_file = get_config_path() / "version.json"
+        # Chemins des binaires locaux (dans TakeOutBack/binaries/linux/)
+        self.local_binaries_dir = get_root_path() / "binaries" / "linux"
+
+    def _get_local_archive(self, tool_name: str) -> Optional[Path]:
+        """Retourne le chemin de l'archive locale si elle existe."""
+        if not self.local_binaries_dir.exists():
+            return None
+
+        tool_dir = self.LOCAL_BINARIES_DIR / tool_name
+        if not tool_dir.exists():
+            return None
+
+        # Chercher l'archive correspondante
+        for archive in tool_dir.iterdir():
+            if archive.suffix in [".zip", ".tgz", ".tar.gz", ".tar.xz", ".7z"]:
+                return archive
+
+        return None
 
     def detect_installed_tools(self) -> Dict[str, Dict[str, Any]]:
         """Détecte les outils portables installés et leurs versions."""
@@ -152,42 +170,59 @@ class ToolManager:
         return updates
 
     def download_tool(self, tool_name: str) -> bool:
-        """Télécharge un outil portable."""
+        """Télécharge un outil portable (utilise d'abord l'archive locale si disponible)."""
         if tool_name not in self.KNOWN_TOOLS:
             self.logger.error(f"Outil inconnu: {tool_name}")
             return False
 
         tool = self.KNOWN_TOOLS[tool_name]
-        url = tool.get_url()
-        expected_checksum = tool.get_checksum()
 
-        self.logger.info(f"Téléchargement de {tool_name} {tool.version}...")
+        self.logger.info(f"Installation de {tool_name} {tool.version}...")
 
-        try:
-            temp_file = self.temp_dir / f"{tool_name}_download.tmp"
-            urllib.request.urlretrieve(url, temp_file)
+        # Vérifier d'abord les archives locales
+        local_archive = self._get_local_archive(tool_name)
+        if local_archive:
+            self.logger.info(f"Archive locale trouvée: {local_archive}")
+            temp_file = local_archive
+            try:
+                self._extract_tool(tool_name, temp_file, tool.version)
+                self.logger.info(f"{tool_name} {tool.version} installé avec succès (archive locale)")
+                return True
+            except Exception as e:
+                self.logger.error(f"Erreur lors de l'extraction de {tool_name} depuis l'archive locale: {e}")
+                return False
+        else:
+            # Pas d'archive locale, télécharger depuis internet
+            url = tool.get_url()
+            expected_checksum = tool.get_checksum()
 
-            if expected_checksum:
-                actual_checksum = self._calculate_checksum(temp_file, tool.checksum_algorithm)
-                if actual_checksum != expected_checksum:
-                    self.logger.error(
-                        f"Checksum invalide pour {tool_name}: "
-                        f"attendu={expected_checksum}, obtenu={actual_checksum}"
-                    )
-                    temp_file.unlink()
-                    return False
+            self.logger.info(f"Téléchargement de {tool_name} {tool.version}...")
 
-            self._extract_tool(tool_name, temp_file, tool.version)
-            temp_file.unlink()
+            try:
+                temp_file = self.temp_dir / f"{tool_name}_download.tmp"
+                urllib.request.urlretrieve(url, temp_file)
 
-            self.logger.info(f"{tool_name} {tool.version} installé avec succès")
-            return True
+                if expected_checksum:
+                    actual_checksum = self._calculate_checksum(temp_file, tool.checksum_algorithm)
+                    if actual_checksum != expected_checksum:
+                        self.logger.error(
+                            f"Checksum invalide pour {tool_name}: "
+                            f"attendu={expected_checksum}, obtenu={actual_checksum}"
+                        )
+                        temp_file.unlink()
+                        return False
 
-        except Exception as e:
-            self.logger.error(f"Erreur lors du téléchargement de {tool_name}: {e}")
-            if temp_file.exists():
+                self._extract_tool(tool_name, temp_file, tool.version)
                 temp_file.unlink()
-            return False
+
+                self.logger.info(f"{tool_name} {tool.version} installé avec succès")
+                return True
+
+            except Exception as e:
+                self.logger.error(f"Erreur lors du téléchargement de {tool_name}: {e}")
+                if temp_file.exists():
+                    temp_file.unlink()
+                return False
 
     def _extract_tool(self, tool_name: str, archive_path: Path, version: str) -> None:
         """Extrait un outil portable."""

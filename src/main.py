@@ -31,19 +31,42 @@ from src.core.compressor import Compressor
 from src.cli.menu import CLI
 
 
+def install_missing_tools() -> bool:
+    """Installe automatiquement les outils portables manquants."""
+    from src.core.tools import ToolManager
+
+    manager = ToolManager()
+    installed_tools = manager.detect_installed_tools()
+    missing = [name for name, info in installed_tools.items() if not info["installed"]]
+
+    if not missing:
+        return True
+
+    print(f"Installation des outils portables manquants...")
+    for tool_name in missing:
+        print(f"  Téléchargement de {tool_name}...")
+        if manager.download_tool(tool_name):
+            print(f"  ✓ {tool_name} installé avec succès")
+        else:
+            print(f"  ✗ Échec de l'installation de {tool_name}")
+            return False
+
+    print("Tous les outils sont maintenant installés.")
+    return True
+
+
 def check_portable_tools() -> bool:
-    """Vérifie que les outils portables sont présents."""
+    """Vérifie que les outils portables sont présents, les installe si nécessaire."""
     python_binary = get_python_binary()
     sevenzip_binary = get_7zip_binary()
 
-    if not python_binary.exists():
-        print(f"ERREUR: Python portable introuvable dans {python_binary}")
-        print("Exécutez setup.py pour installer les outils portables.")
-        return False
+    if python_binary.exists() and sevenzip_binary.exists():
+        return True
 
-    if not sevenzip_binary.exists():
-        print(f"ERREUR: 7-Zip portable introuvable dans {sevenzip_binary}")
-        print("Exécutez setup.py pour installer les outils portables.")
+    print("Outils portables manquants — installation automatique en cours...")
+    if not install_missing_tools():
+        print("ERREUR: Impossible d'installer les outils portables.")
+        print("Vérifiez votre connexion réseau et réessayez.")
         return False
 
     return True
@@ -86,8 +109,6 @@ def run_setup() -> None:
         get_root_path() / "temp",
         get_root_path() / "state",
         get_root_path() / "scripts",
-        get_root_path() / "tools" / detect_os() / "python",
-        get_root_path() / "tools" / detect_os() / "7zip",
     ]
 
     for directory in directories:
