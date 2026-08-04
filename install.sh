@@ -91,77 +91,65 @@ chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 # Create Incoming/ and Archive/ at drive root
 mkdir -p Incoming Archive
 
-# Use system Python to download portable tools via ToolManager
+# Download portable tools from GitHub (no Python required)
 echo ""
 echo "=== Installing portable tools ==="
 echo ""
 
-PYTHON_CMD=""
+TOOLS_DIR="$INSTALL_DIR/TakeOutBack/tools/linux"
+mkdir -p "$TOOLS_DIR/python" "$TOOLS_DIR/7zip"
 
-# Check for system Python first
-if command -v python3 &> /dev/null; then
-    PYTHON_CMD="python3"
-elif command -v python &> /dev/null; then
-    PYTHON_CMD="python"
+if command -v curl &> /dev/null; then
+    DOWNLOAD_CMD="curl -fsSL -o"
+elif command -v wget &> /dev/null; then
+    DOWNLOAD_CMD="wget -q -O"
+else
+    echo "ERROR: curl or wget is required."
+    exit 1
 fi
 
-# If no system Python, download portable Python first
-if [ -z "$PYTHON_CMD" ]; then
-    echo "No Python found. Downloading portable Python..."
-
-    if command -v curl &> /dev/null; then
-        DOWNLOAD_CMD="curl -fsSL -o"
-    elif command -v wget &> /dev/null; then
-        DOWNLOAD_CMD="wget -q -O"
-    else
-        echo "ERROR: curl or wget is required to download Python."
-        exit 1
-    fi
-
-    PYTHON_URL="https://www.python.org/ftp/python/3.12.3/python-3.12.3-embed-amd64.zip"
-    PYTHON_DEST="$INSTALL_DIR/TakeOutBack/tools/linux/python.zip"
-
-    $DOWNLOAD_CMD "$PYTHON_DEST" "$PYTHON_URL"
-
-    if [ ! -f "$PYTHON_DEST" ]; then
-        echo "ERROR: Failed to download Python."
-        exit 1
-    fi
-
-    mkdir -p "$INSTALL_DIR/TakeOutBack/tools/linux/python"
-    if command -v unzip &> /dev/null; then
-        unzip -q "$PYTHON_DEST" -d "$INSTALL_DIR/TakeOutBack/tools/linux/python"
-    elif command -v 7z &> /dev/null; then
-        7z x "$PYTHON_DEST" -o"$INSTALL_DIR/TakeOutBack/tools/linux/python" > /dev/null
-    else
-        echo "ERROR: unzip or 7z is required to extract Python."
-        exit 1
-    fi
-
-    rm -f "$PYTHON_DEST"
-
-    # Use the extracted Python
-    if [ -f "$INSTALL_DIR/TakeOutBack/tools/linux/python/python3" ]; then
-        PYTHON_CMD="$INSTALL_DIR/TakeOutBack/tools/linux/python/python3"
-    elif [ -f "$INSTALL_DIR/TakeOutBack/tools/linux/python/python" ]; then
-        PYTHON_CMD="$INSTALL_DIR/TakeOutBack/tools/linux/python/python"
-    else
-        echo "ERROR: Failed to extract Python."
-        exit 1
-    fi
-
-    echo "Portable Python downloaded."
+# Download Python
+echo "Downloading Python..."
+$DOWNLOAD_CMD "$TOOLS_DIR/python/Python-3.13.14.tgz" "https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/python/Python-3.13.14.tgz"
+if [ ! -f "$TOOLS_DIR/python/Python-3.13.14.tgz" ]; then
+    echo "ERROR: Failed to download Python."
+    exit 1
 fi
 
-echo "Downloading portable tools using Python..."
-$PYTHON_CMD -c "
-import sys
-sys.path.insert(0, '$INSTALL_DIR/TakeOutBack/src')
-from src.core.tools import ToolManager
-tm = ToolManager()
-tm.download_tool('python')
-tm.download_tool('7zip')
-"
+echo "Extracting Python..."
+if command -v tar &> /dev/null; then
+    tar -xzf "$TOOLS_DIR/python/Python-3.13.14.tgz" -C "$TOOLS_DIR/python"
+    mv "$TOOLS_DIR/python/Python-3.13.14"/* "$TOOLS_DIR/python/" 2>/dev/null || true
+    rm -rf "$TOOLS_DIR/python/Python-3.13.14"
+    rm -f "$TOOLS_DIR/python/Python-3.13.14.tgz"
+elif command -v 7z &> /dev/null; then
+    7z x "$TOOLS_DIR/python/Python-3.13.14.tgz" -o"$TOOLS_DIR/python" > /dev/null
+    mv "$TOOLS_DIR/python/Python-3.13.14"/* "$TOOLS_DIR/python/" 2>/dev/null || true
+    rm -rf "$TOOLS_DIR/python/Python-3.13.14"
+    rm -f "$TOOLS_DIR/python/Python-3.13.14.tgz"
+else
+    echo "ERROR: tar or 7z is required to extract Python."
+    exit 1
+fi
+
+# Download 7-Zip
+echo "Downloading 7-Zip..."
+$DOWNLOAD_CMD "$TOOLS_DIR/7zip/7z2301-linux-x64.tar.xz" "https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/7zip/7z2301-linux-x64.tar.xz"
+if [ ! -f "$TOOLS_DIR/7zip/7z2301-linux-x64.tar.xz" ]; then
+    echo "ERROR: Failed to download 7-Zip."
+    exit 1
+fi
+
+echo "Extracting 7-Zip..."
+if command -v tar &> /dev/null; then
+    tar -xJf "$TOOLS_DIR/7zip/7z2301-linux-x64.tar.xz" -C "$TOOLS_DIR/7zip"
+    rm -f "$TOOLS_DIR/7zip/7z2301-linux-x64.tar.xz"
+else
+    echo "ERROR: tar is required to extract 7-Zip."
+    exit 1
+fi
+
+echo "Portable tools installed."
 
 echo ""
 echo "=== Installation complete ==="

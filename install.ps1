@@ -73,60 +73,48 @@ if (Test-Path "TakeOutBack\TakeOutBack.bat") {
 if (-not (Test-Path "Incoming")) { New-Item -ItemType Directory -Path "Incoming" | Out-Null }
 if (-not (Test-Path "Archive")) { New-Item -ItemType Directory -Path "Archive" | Out-Null }
 
-# Use system Python to download portable tools via ToolManager
+# Download portable tools directly from GitHub (no Python required)
 Write-Host ""
 Write-Host "=== Installing portable tools ===" -ForegroundColor Cyan
 Write-Host ""
 
-$srcPath = "$INSTALL_DIR\TakeOutBack\src"
-$pythonCmd = $null
+$TOOLS_DIR = "$INSTALL_DIR\TakeOutBack\tools\windows"
+New-Item -ItemType Directory -Path "$TOOLS_DIR\python" -Force | Out-Null
+New-Item -ItemType Directory -Path "$TOOLS_DIR\7zip" -Force | Out-Null
 
-# Check for system Python first
-if (Get-Command python3 -ErrorAction SilentlyContinue) {
-    $pythonCmd = "python3"
-} elseif (Get-Command python -ErrorAction SilentlyContinue) {
-    $pythonCmd = "python"
-}
-
-# If no system Python, download portable Python first
-if (-not $pythonCmd) {
-    Write-Host "No Python found. Downloading portable Python..." -ForegroundColor Yellow
-    
-    $pythonUrl = "https://www.python.org/ftp/python/3.12.3/python-3.12.3-embed-amd64.zip"
-    $pythonDest = "$INSTALL_DIR\TakeOutBack\tools\windows\python.zip"
-    
-    try {
-        Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonDest -UseBasicParsing
-        New-Item -ItemType Directory -Path "$INSTALL_DIR\TakeOutBack\tools\windows\python" -Force | Out-Null
-        
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($pythonDest, "$INSTALL_DIR\TakeOutBack\tools\windows\python")
-        Remove-Item -Force $pythonDest -ErrorAction SilentlyContinue
-        
-        $pythonCmd = "$INSTALL_DIR\TakeOutBack\tools\windows\python\python.exe"
-        Write-Host "Portable Python downloaded." -ForegroundColor Green
-    } catch {
-        Write-Host "ERROR: Failed to download Python: $_" -ForegroundColor Red
-        exit 1
-    }
-}
-
-Write-Host "Downloading portable tools using Python..." -ForegroundColor Cyan
-
-& $pythonCmd -c "
-import sys
-sys.path.insert(0, '$($srcPath -replace '\\','/')')
-from src.core.tools import ToolManager
-tm = ToolManager()
-tm.download_tool('python')
-tm.download_tool('7zip')
-print('Tools installed.')
-"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Failed to download portable tools." -ForegroundColor Red
+# Download Python
+Write-Host "Downloading Python..." -ForegroundColor Cyan
+$pythonUrl = "https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/python/python-3.13.14-embed-amd64.zip"
+$pythonDest = "$TOOLS_DIR\python\python-3.13.14-embed-amd64.zip"
+try {
+    Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonDest -UseBasicParsing
+} catch {
+    Write-Host "ERROR: Failed to download Python: $_" -ForegroundColor Red
     exit 1
 }
+
+Write-Host "Extracting Python..." -ForegroundColor Cyan
+try {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($pythonDest, "$TOOLS_DIR\python")
+    Remove-Item -Force $pythonDest -ErrorAction SilentlyContinue
+} catch {
+    Write-Host "ERROR: Failed to extract Python: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Download 7-Zip
+Write-Host "Downloading 7-Zip..." -ForegroundColor Cyan
+$sevenZipUrl = "https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z2301.exe"
+$sevenZipDest = "$TOOLS_DIR\7zip\7z.exe"
+try {
+    Invoke-WebRequest -Uri $sevenZipUrl -OutFile $sevenZipDest -UseBasicParsing
+} catch {
+    Write-Host "ERROR: Failed to download 7-Zip: $_" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Portable tools installed." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "=== Installation complete ===" -ForegroundColor Green

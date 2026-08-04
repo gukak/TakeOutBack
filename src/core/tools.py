@@ -61,17 +61,17 @@ class ToolManager:
     KNOWN_TOOLS: Dict[str, ToolVersion] = {
         "python": ToolVersion(
             name="python",
-            version="3.11.5",
-            windows_url="https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip",
-            linux_url="https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tgz",
+            version="3.13.14",
+            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/python/python-3.13.14-embed-amd64.zip",
+            linux_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/python/Python-3.13.14.tgz",
             windows_checksum="",
             linux_checksum="",
         ),
         "7zip": ToolVersion(
             name="7zip",
             version="23.01",
-            windows_url="https://www.7-zip.org/a/7z2301.zip",
-            linux_url="https://www.7-zip.org/a/7z2301-linux-x64.tar.xz",
+            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z2301.exe",
+            linux_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/7zip/7z2301-linux-x64.tar.xz",
             windows_checksum="",
             linux_checksum="",
         ),
