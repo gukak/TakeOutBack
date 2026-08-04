@@ -117,8 +117,8 @@ class ToolManager:
             return tool_dir / "python3"
         elif tool_name == "7zip":
             if detect_os() == "windows":
-                return tool_dir / "7zz.exe"
-            return tool_dir / "7zz"
+                return tool_dir / "7z.exe"
+            return tool_dir / "7z"
         return None
 
     def _detect_tool_version(self, binary: Path, tool_name: str) -> Optional[str]:
@@ -235,7 +235,7 @@ class ToolManager:
         """Extrait 7-Zip portable."""
         if archive_path.suffix == ".7z":
             subprocess.run(
-                [str(get_tools_path(detect_os()) / "7zip" / ("7zz.exe" if detect_os() == "windows" else "7zz")),
+                [str(get_tools_path(detect_os()) / "7zip" / ("7z.exe" if detect_os() == "windows" else "7z")),
                  "x", str(archive_path), f"-o{tool_dir}", "-y"],
                 check=True,
             )
