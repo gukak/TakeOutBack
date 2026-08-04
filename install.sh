@@ -96,19 +96,65 @@ echo ""
 echo "=== Installing portable tools ==="
 echo ""
 
+PYTHON_CMD=""
+
+# Check for system Python first
 if command -v python3 &> /dev/null; then
-    echo "Downloading portable tools using system Python..."
-    python3 -c "
-import sys
-sys.path.insert(0, '$INSTALL_DIR/TakeOutBack/src')
-from src.core.tools import ToolManager
-tm = ToolManager()
-tm.download_tool('python')
-tm.download_tool('7zip')
-"
+    PYTHON_CMD="python3"
 elif command -v python &> /dev/null; then
-    echo "Downloading portable tools using system Python..."
-    python -c "
+    PYTHON_CMD="python"
+fi
+
+# If no system Python, download portable Python first
+if [ -z "$PYTHON_CMD" ]; then
+    echo "No Python found. Downloading portable Python..."
+
+    if command -v curl &> /dev/null; then
+        DOWNLOAD_CMD="curl -fsSL -o"
+    elif command -v wget &> /dev/null; then
+        DOWNLOAD_CMD="wget -q -O"
+    else
+        echo "ERROR: curl or wget is required to download Python."
+        exit 1
+    fi
+
+    PYTHON_URL="https://www.python.org/ftp/python/3.12.3/python-3.12.3-embed-amd64.zip"
+    PYTHON_DEST="$INSTALL_DIR/TakeOutBack/tools/linux/python.zip"
+
+    $DOWNLOAD_CMD "$PYTHON_DEST" "$PYTHON_URL"
+
+    if [ ! -f "$PYTHON_DEST" ]; then
+        echo "ERROR: Failed to download Python."
+        exit 1
+    fi
+
+    mkdir -p "$INSTALL_DIR/TakeOutBack/tools/linux/python"
+    if command -v unzip &> /dev/null; then
+        unzip -q "$PYTHON_DEST" -d "$INSTALL_DIR/TakeOutBack/tools/linux/python"
+    elif command -v 7z &> /dev/null; then
+        7z x "$PYTHON_DEST" -o"$INSTALL_DIR/TakeOutBack/tools/linux/python" > /dev/null
+    else
+        echo "ERROR: unzip or 7z is required to extract Python."
+        exit 1
+    fi
+
+    rm -f "$PYTHON_DEST"
+
+    # Use the extracted Python
+    if [ -f "$INSTALL_DIR/TakeOutBack/tools/linux/python/python3" ]; then
+        PYTHON_CMD="$INSTALL_DIR/TakeOutBack/tools/linux/python/python3"
+    elif [ -f "$INSTALL_DIR/TakeOutBack/tools/linux/python/python" ]; then
+        PYTHON_CMD="$INSTALL_DIR/TakeOutBack/tools/linux/python/python"
+    else
+        echo "ERROR: Failed to extract Python."
+        exit 1
+    fi
+
+    echo "Portable Python downloaded."
+fi
+
+echo "Downloading portable tools using Python..."
+$PYTHON_CMD -c "
 import sys
 sys.path.insert(0, '$INSTALL_DIR/TakeOutBack/src')
 from src.core.tools import ToolManager
@@ -116,10 +162,6 @@ tm = ToolManager()
 tm.download_tool('python')
 tm.download_tool('7zip')
 "
-else
-    echo "ERROR: Python is required to download portable tools."
-    exit 1
-fi
 
 echo ""
 echo "=== Installation complete ==="

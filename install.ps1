@@ -78,18 +78,41 @@ Write-Host ""
 Write-Host "=== Installing portable tools ===" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "Downloading portable tools using system Python..." -ForegroundColor Cyan
+$srcPath = "$INSTALL_DIR\TakeOutBack\src"
+$pythonCmd = $null
 
+# Check for system Python first
 if (Get-Command python3 -ErrorAction SilentlyContinue) {
     $pythonCmd = "python3"
 } elseif (Get-Command python -ErrorAction SilentlyContinue) {
     $pythonCmd = "python"
-} else {
-    Write-Host "ERROR: Python is required to download portable tools." -ForegroundColor Red
-    exit 1
 }
 
-$srcPath = "$INSTALL_DIR\TakeOutBack\src"
+# If no system Python, download portable Python first
+if (-not $pythonCmd) {
+    Write-Host "No Python found. Downloading portable Python..." -ForegroundColor Yellow
+    
+    $pythonUrl = "https://www.python.org/ftp/python/3.12.3/python-3.12.3-embed-amd64.zip"
+    $pythonDest = "$INSTALL_DIR\TakeOutBack\tools\windows\python.zip"
+    
+    try {
+        Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonDest -UseBasicParsing
+        New-Item -ItemType Directory -Path "$INSTALL_DIR\TakeOutBack\tools\windows\python" -Force | Out-Null
+        
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($pythonDest, "$INSTALL_DIR\TakeOutBack\tools\windows\python")
+        Remove-Item -Force $pythonDest -ErrorAction SilentlyContinue
+        
+        $pythonCmd = "$INSTALL_DIR\TakeOutBack\tools\windows\python\python.exe"
+        Write-Host "Portable Python downloaded." -ForegroundColor Green
+    } catch {
+        Write-Host "ERROR: Failed to download Python: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "Downloading portable tools using Python..." -ForegroundColor Cyan
+
 & $pythonCmd -c "
 import sys
 sys.path.insert(0, '$($srcPath -replace '\\','/')')
