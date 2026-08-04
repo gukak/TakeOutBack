@@ -73,97 +73,36 @@ if (Test-Path "TakeOutBack\TakeOutBack.bat") {
 if (-not (Test-Path "Incoming")) { New-Item -ItemType Directory -Path "Incoming" | Out-Null }
 if (-not (Test-Path "Archive")) { New-Item -ItemType Directory -Path "Archive" | Out-Null }
 
-# Download and install portable tools
+# Use system Python to download portable tools via ToolManager
 Write-Host ""
 Write-Host "=== Installing portable tools ===" -ForegroundColor Cyan
 Write-Host ""
 
-$toolsDir = "$INSTALL_DIR\TakeOutBack\tools\windows"
-$pythonDir = "$toolsDir\python"
-$sevenZipDir = "$toolsDir\7zip"
+Write-Host "Downloading portable tools using system Python..." -ForegroundColor Cyan
 
-# Download Python embeddable (latest stable 3.x)
-$pythonUrls = @(
-    "https://www.python.org/ftp/python/3.12.4/python-3.12.4-embed-amd64.zip",
-    "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip",
-    "https://www.python.org/ftp/python/3.10.15/python-3.10.15-embed-amd64.zip"
-)
-$pythonZip = "$INSTALL_DIR\python_embed.zip"
-$pythonDownloaded = $false
-
-Write-Host "Downloading Python embeddable..." -ForegroundColor Cyan
-foreach ($url in $pythonUrls) {
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $pythonZip -UseBasicParsing -ErrorAction Stop
-        $pythonDownloaded = $true
-        Write-Host "Python downloaded successfully." -ForegroundColor Green
-        break
-    } catch {
-        Write-Host "WARNING: Failed to download $url" -ForegroundColor Yellow
-        continue
-    }
-}
-
-if (-not $pythonDownloaded) {
-    Write-Host "ERROR: Could not download any Python version." -ForegroundColor Red
-    Write-Host "Please install Python manually from https://www.python.org/downloads/" -ForegroundColor Red
+if (Get-Command python3 -ErrorAction SilentlyContinue) {
+    $pythonCmd = "python3"
+} elseif (Get-Command python -ErrorAction SilentlyContinue) {
+    $pythonCmd = "python"
+} else {
+    Write-Host "ERROR: Python is required to download portable tools." -ForegroundColor Red
     exit 1
 }
 
-if (Test-Path $pythonZip) {
-    New-Item -ItemType Directory -Force -Path $pythonDir | Out-Null
-    try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($pythonZip, $pythonDir)
-        Remove-Item -Force $pythonZip -ErrorAction SilentlyContinue
+$srcPath = "$INSTALL_DIR\TakeOutBack\src"
+& $pythonCmd -c "
+import sys
+sys.path.insert(0, '$($srcPath -replace '\\','/')')
+from src.core.tools import ToolManager
+tm = ToolManager()
+tm.download_tool('python')
+tm.download_tool('7zip')
+print('Tools installed.')
+"
 
-        # Enable pip for the embeddable Python
-        if (Test-Path "$pythonDir\python.exe") {
-            & "$pythonDir\python.exe" -m ensurepip 2>$null
-        }
-        Write-Host "Python 3.11.5 installed." -ForegroundColor Green
-    } catch {
-        Write-Host "WARNING: Python extraction failed: $_" -ForegroundColor Yellow
-    }
-}
-
-# Download 7-Zip (latest stable)
-$sevenZipUrls = @(
-    "https://www.7-zip.org/a/7z2301-extra.7z",
-    "https://www.7-zip.org/a/7z2201-extra.7z",
-    "https://www.7-zip.org/a/7z1900-extra.7z"
-)
-$sevenZipFile = "$INSTALL_DIR\7z.7z"
-$sevenZipDownloaded = $false
-
-Write-Host "Downloading 7-Zip..." -ForegroundColor Cyan
-foreach ($url in $sevenZipUrls) {
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $sevenZipFile -UseBasicParsing -ErrorAction Stop
-        $sevenZipDownloaded = $true
-        Write-Host "7-Zip downloaded successfully." -ForegroundColor Green
-        break
-    } catch {
-        Write-Host "WARNING: Failed to download $url" -ForegroundColor Yellow
-        continue
-    }
-}
-
-if (-not $sevenZipDownloaded) {
-    Write-Host "ERROR: Could not download any 7-Zip version." -ForegroundColor Red
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Failed to download portable tools." -ForegroundColor Red
     exit 1
-}
-
-if (Test-Path $sevenZipFile) {
-    New-Item -ItemType Directory -Force -Path $sevenZipDir | Out-Null
-    try {
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($sevenZipFile, $sevenZipDir)
-        Remove-Item -Force $sevenZipFile -ErrorAction SilentlyContinue
-        Write-Host "7-Zip 23.01 installed." -ForegroundColor Green
-    } catch {
-        Write-Host "WARNING: 7-Zip extraction failed: $_" -ForegroundColor Yellow
-    }
 }
 
 Write-Host ""

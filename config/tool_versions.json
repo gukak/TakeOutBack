@@ -1,0 +1,28 @@
+{
+  "python": {
+    "embeddable": {
+      "windows": [
+        "https://www.python.org/ftp/python/3.12.4/python-3.12.4-embed-amd64.zip",
+        "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip",
+        "https://www.python.org/ftp/python/3.10.15/python-3.10.15-embed-amd64.zip"
+      ],
+      "linux": [
+        "https://www.python.org/ftp/python/3.12.4/Python-3.12.4.tgz",
+        "https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz",
+        "https://www.python.org/ftp/python/3.10.15/Python-3.10.15.tgz"
+      ]
+    }
+  },
+  "7zip": {
+    "linux": [
+      "https://www.7-zip.org/a/7z2408-linux-x64.tar.xz",
+      "https://www.7-zip.org/a/7z2301-linux-x64.tar.xz",
+      "https://www.7-zip.org/a/7z2201-linux-x64.tar.xz"
+    ],
+    "windows": [
+      "https://www.7-zip.org/a/7z2408-extra.7z",
+      "https://www.7-zip.org/a/7z2301-extra.7z",
+      "https://www.7-zip.org/a/7z2201-extra.7z"
+    ]
+  }
+}

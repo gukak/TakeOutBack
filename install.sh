@@ -91,66 +91,33 @@ chmod +x TakeOutBack/src/main.py 2>/dev/null || true
 # Create Incoming/ and Archive/ at drive root
 mkdir -p Incoming Archive
 
-# Download and install portable tools
+# Use system Python to download portable tools via ToolManager
 echo ""
 echo "=== Installing portable tools ==="
 echo ""
 
-TOOLS_DIR="$INSTALL_DIR/TakeOutBack/tools/linux"
-PYTHON_DIR="$TOOLS_DIR/python"
-SEVENZIP_DIR="$TOOLS_DIR/7zip"
-
-# Download Python (try multiple versions as fallback)
-echo "Downloading Python..."
-PYTHON_URLS=(
-    "https://www.python.org/ftp/python/3.11.5/Python-3.11.5.tgz"
-    "https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz"
-    "https://www.python.org/ftp/python/3.9.18/Python-3.9.18.tgz"
-)
-PYTHON_DOWNLOADED=0
-
-for url in "${PYTHON_URLS[@]}"; do
-    if command -v curl &> /dev/null; then
-        curl -fsSL -o python_embed.tar.xz "$url" 2>/dev/null && { PYTHON_DOWNLOADED=1; echo "Python downloaded."; break; }
-    elif command -v wget &> /dev/null; then
-        wget -q -O python_embed.tar.xz "$url" 2>/dev/null && { PYTHON_DOWNLOADED=1; echo "Python downloaded."; break; }
-    fi
-done
-
-if [ "$PYTHON_DOWNLOADED" -eq 1 ] && [ -f "python_embed.tar.xz" ]; then
-    mkdir -p "$PYTHON_DIR"
-    tar -xJf python_embed.tar.xz -C "$PYTHON_DIR"
-    rm -f python_embed.tar.xz
-    echo "Python installed."
+if command -v python3 &> /dev/null; then
+    echo "Downloading portable tools using system Python..."
+    python3 -c "
+import sys
+sys.path.insert(0, '$INSTALL_DIR/TakeOutBack/src')
+from src.core.tools import ToolManager
+tm = ToolManager()
+tm.download_tool('python')
+tm.download_tool('7zip')
+"
+elif command -v python &> /dev/null; then
+    echo "Downloading portable tools using system Python..."
+    python -c "
+import sys
+sys.path.insert(0, '$INSTALL_DIR/TakeOutBack/src')
+from src.core.tools import ToolManager
+tm = ToolManager()
+tm.download_tool('python')
+tm.download_tool('7zip')
+"
 else
-    echo "ERROR: Could not download any Python version."
-    exit 1
-fi
-
-# Download 7-Zip (try multiple versions as fallback)
-echo "Downloading 7-Zip..."
-SEVENZIP_URLS=(
-    "https://www.7-zip.org/a/7z2301-linux-x64.tar.xz"
-    "https://www.7-zip.org/a/7z2201-linux-x64.tar.xz"
-    "https://www.7-zip.org/a/7z1900-linux-x64.tar.xz"
-)
-SEVENZIP_DOWNLOADED=0
-
-for url in "${SEVENZIP_URLS[@]}"; do
-    if command -v curl &> /dev/null; then
-        curl -fsSL -o 7z.tar.xz "$url" 2>/dev/null && { SEVENZIP_DOWNLOADED=1; echo "7-Zip downloaded."; break; }
-    elif command -v wget &> /dev/null; then
-        wget -q -O 7z.tar.xz "$url" 2>/dev/null && { SEVENZIP_DOWNLOADED=1; echo "7-Zip downloaded."; break; }
-    fi
-done
-
-if [ "$SEVENZIP_DOWNLOADED" -eq 1 ] && [ -f "7z.tar.xz" ]; then
-    mkdir -p "$SEVENZIP_DIR"
-    tar -xJf 7z.tar.xz -C "$SEVENZIP_DIR"
-    rm -f 7z.tar.xz
-    echo "7-Zip installed."
-else
-    echo "ERROR: Could not download any 7-Zip version."
+    echo "ERROR: Python is required to download portable tools."
     exit 1
 fi
 
