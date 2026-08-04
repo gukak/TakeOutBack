@@ -70,7 +70,7 @@ class ToolManager:
         "7zip": ToolVersion(
             name="7zip",
             version="23.01",
-            windows_url="https://www.7-zip.org/a/7z2301-extra.7z",
+            windows_url="https://www.7-zip.org/a/7z2301.zip",
             linux_url="https://www.7-zip.org/a/7z2301-linux-x64.tar.xz",
             windows_checksum="",
             linux_checksum="",
