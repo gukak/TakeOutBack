@@ -68,8 +68,15 @@ if (-not (Test-Path "TakeOutBack")) {
 if (Test-Path "TakeOutBack\TakeOutBack.bat") {
     Move-Item -Path "TakeOutBack\TakeOutBack.bat" -Destination "." -Force
     # Convert LF to CRLF (GitHub ZIPs strip CRLF)
-    $lines = Get-Content "TakeOutBack.bat"
-    Set-Content "TakeOutBack.bat" -Value $lines -Encoding ASCII
+    $bytes = [System.IO.File]::ReadAllBytes("TakeOutBack.bat")
+    $newBytes = @()
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        if ($bytes[$i] -eq 0x0A -and ($i + 1 -ge $bytes.Length -or $bytes[$i + 1] -ne 0x0D)) {
+            $newBytes += 0x0D
+        }
+        $newBytes += $bytes[$i]
+    }
+    [System.IO.File]::WriteAllBytes("TakeOutBack.bat", $newBytes)
 }
 
 # Create Incoming/ and Archive/ at drive root
