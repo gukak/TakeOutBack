@@ -16,9 +16,6 @@
 ```bash
 # Linux
 bash install.sh
-
-# Windows (PowerShell)
-iwr -useb https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.ps1 | iex
 ```
 
 4. Follow the on-screen instructions
@@ -129,8 +126,7 @@ bash TakeOutBack.sh verify
 
 ### Problem: Path conflicts
 
-The system uses relative paths. No issues with drive letter changes (Windows)
-or mount point changes (Linux).
+The system uses relative paths. No issues with mount point changes.
 
 ### Problem: Incompatible version
 

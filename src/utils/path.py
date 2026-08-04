@@ -66,33 +66,20 @@ def get_state_path() -> Path:
 
 
 def detect_os() -> str:
-    """Détecte le système d'exploitation (windows ou linux)."""
-    if sys.platform == "win32":
-        return "windows"
-    elif sys.platform == "linux":
-        return "linux"
-    else:
-        raise OSError(f"Système d'exploitation non supporté: {sys.platform}")
+    """Retourne le système d'exploitation (linux)."""
+    return "linux"
 
 
 def get_python_binary() -> Path:
     """Retourne le chemin vers le Python portable."""
-    os_name = detect_os()
-    python_dir = get_tools_path(os_name) / "python"
-    if os_name == "windows":
-        return python_dir / "python.exe"
-    else:
-        return python_dir / "python3"
+    python_dir = get_tools_path("linux") / "python"
+    return python_dir / "python3"
 
 
 def get_7zip_binary() -> Path:
     """Retourne le chemin vers le 7-Zip portable."""
-    os_name = detect_os()
-    sevenzip_dir = get_tools_path(os_name) / "7zip"
-    if os_name == "windows":
-        return sevenzip_dir / "7zz.exe"
-    else:
-        return sevenzip_dir / "7zz"
+    sevenzip_dir = get_tools_path("linux") / "7zip"
+    return sevenzip_dir / "7zz"
 
 
 def ensure_directory(path: Path) -> None:

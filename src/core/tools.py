@@ -18,7 +18,6 @@ from src.utils.path import (
     get_tools_path,
     get_temp_path,
     get_config_path,
-    detect_os,
 )
 from src.utils.logger import get_logger
 
@@ -30,29 +29,21 @@ class ToolVersion:
         self,
         name: str,
         version: str,
-        windows_url: str,
-        linux_url: str,
-        windows_checksum: str,
-        linux_checksum: str,
+        url: str,
+        checksum: str = "",
         checksum_algorithm: str = "sha256",
     ):
         self.name = name
         self.version = version
-        self.windows_url = windows_url
-        self.linux_url = linux_url
-        self.windows_checksum = windows_checksum
-        self.linux_checksum = linux_checksum
+        self.url = url
+        self.checksum = checksum
         self.checksum_algorithm = checksum_algorithm
 
-    def get_url(self, os_name: str) -> str:
-        if os_name == "windows":
-            return self.windows_url
-        return self.linux_url
+    def get_url(self) -> str:
+        return self.url
 
-    def get_checksum(self, os_name: str) -> str:
-        if os_name == "windows":
-            return self.windows_checksum
-        return self.linux_checksum
+    def get_checksum(self) -> str:
+        return self.checksum
 
 
 class ToolManager:
@@ -62,35 +53,30 @@ class ToolManager:
         "python": ToolVersion(
             name="python",
             version="3.13.14",
-            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/python/python-3.13.14-embed-amd64.zip",
-            linux_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/python/Python-3.13.14.tgz",
-            windows_checksum="",
-            linux_checksum="",
+            url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/python/Python-3.13.14.tgz",
+            checksum="",
         ),
         "7zip": ToolVersion(
             name="7zip",
             version="23.01",
-            windows_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/windows/7zip/7z.exe",
-            linux_url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/7zip/7z2301-linux-x64.tar.xz",
-            windows_checksum="",
-            linux_checksum="",
+            url="https://github.com/gukak/TakeOutBack/raw/main/binaries/linux/7zip/7z2301-linux-x64.tar.xz",
+            checksum="",
         ),
     }
 
     def __init__(self):
         self.logger = get_logger()
-        self.tools_dir = get_tools_path(detect_os())
+        self.tools_dir = get_tools_path("linux")
         self.temp_dir = get_temp_path()
         self.version_file = get_config_path() / "version.json"
 
     def detect_installed_tools(self) -> Dict[str, Dict[str, Any]]:
         """Détecte les outils portables installés et leurs versions."""
         installed = {}
-        os_name = detect_os()
         tools_base = Path(__file__).parent.parent.parent / "tools"
 
         for tool_name in ["python", "7zip"]:
-            tool_dir = tools_base / os_name / tool_name
+            tool_dir = tools_base / "linux" / tool_name
             binary = self._get_tool_binary(tool_dir, tool_name)
 
             if binary and binary.exists():
@@ -112,12 +98,8 @@ class ToolManager:
     def _get_tool_binary(self, tool_dir: Path, tool_name: str) -> Optional[Path]:
         """Retourne le chemin du binaire d'un outil."""
         if tool_name == "python":
-            if detect_os() == "windows":
-                return tool_dir / "python.exe"
             return tool_dir / "python3"
         elif tool_name == "7zip":
-            if detect_os() == "windows":
-                return tool_dir / "7z.exe"
             return tool_dir / "7z"
         return None
 
@@ -164,7 +146,7 @@ class ToolManager:
                     "current_version": current_version,
                     "latest_version": known.version,
                     "update_available": current_version != known.version and info["installed"],
-                    "url": known.get_url(detect_os()),
+                    "url": known.get_url(),
                 }
 
         return updates
@@ -176,9 +158,8 @@ class ToolManager:
             return False
 
         tool = self.KNOWN_TOOLS[tool_name]
-        os_name = detect_os()
-        url = tool.get_url(os_name)
-        expected_checksum = tool.get_checksum(os_name)
+        url = tool.get_url()
+        expected_checksum = tool.get_checksum()
 
         self.logger.info(f"Téléchargement de {tool_name} {tool.version}...")
 
@@ -235,7 +216,7 @@ class ToolManager:
         """Extrait 7-Zip portable."""
         if archive_path.suffix == ".7z":
             subprocess.run(
-                [str(get_tools_path(detect_os()) / "7zip" / ("7z.exe" if detect_os() == "windows" else "7z")),
+                [str(get_tools_path("linux") / "7zip" / "7z"),
                  "x", str(archive_path), f"-o{tool_dir}", "-y"],
                 check=True,
             )

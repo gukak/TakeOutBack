@@ -17,7 +17,7 @@ class TestPath(unittest.TestCase):
     def test_detect_os(self):
         """Test la détection du système d'exploitation."""
         os_name = detect_os()
-        self.assertIn(os_name, ["windows", "linux"])
+        self.assertEqual(os_name, "linux")
 
     def test_get_root_path(self):
         """Test le retour du chemin racine."""

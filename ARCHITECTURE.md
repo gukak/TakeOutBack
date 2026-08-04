@@ -179,7 +179,7 @@ Archive/raw/Photos/Vacation/
 
 ### Embedded Tools
 - **Python**: Portable version downloaded on first launch
-- **7-Zip**: Portable version (`7zz.exe`/`7zz`) downloaded
+- **7-Zip**: Portable version (`7zz`) downloaded
 - **Updates**: Detected and applied automatically
 
 ### Process
@@ -277,7 +277,7 @@ Archive/raw/Photos/Vacation/
 - New features
 
 ### Compatibility
-- Support for new Windows/Linux versions
+- Support for new Linux versions
 - Support for new Python/7-Zip versions
 - Adaptation to Google Takeout changes
 

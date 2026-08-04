@@ -11,7 +11,7 @@ Portable application for archiving the complete history of Google Takeout export
 - Integrity verification with JSON/CSV reports
 - Periodic batch compression
 - 100% portable (external drive)
-- Cross-platform: Windows and Linux
+- Linux compatible
 
 ## Structure
 
@@ -40,13 +40,6 @@ Drive root/
 ```bash
 cd /media/your_drive
 curl -fsSL https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.sh | bash
-```
-
-### Windows (PowerShell)
-
-```powershell
-cd D:\
-iwr -useb https://raw.githubusercontent.com/gukak/TakeOutBack/main/install.ps1 | iex
 ```
 
 ### Manual Install

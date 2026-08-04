@@ -22,7 +22,7 @@ from src.utils.path import (
 )
 from src.utils.config import get_config, Config
 from src.utils.logger import setup_logger, get_logger
-from src.utils.platform import is_windows, is_linux
+
 from src.core.database import Database, get_database
 from src.core.importer import TakeoutImporter
 from src.core.indexer import SearchEngine
