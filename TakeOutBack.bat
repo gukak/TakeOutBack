@@ -49,7 +49,7 @@ if "%1"=="import" (
     echo   verify              Verify integrity
     echo   stats               Show statistics
     echo   update-tools        Update tools
-    echo   (no args)           Launch interactive menu
+    echo   ^(no args^)           Launch interactive menu
     echo.
     "%PYTHON%" src\main.py
 )
