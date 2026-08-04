@@ -65,6 +65,11 @@ if ($extractedFolder) {
 Remove-Item -Recurse -Force $extractDir
 Remove-Item -Force $TEMP_ZIP -ErrorAction SilentlyContinue
 
+# Move launcher script to drive root
+if (Test-Path "TakeOutBack\TakeOutBack.bat") {
+    Move-Item -Path "TakeOutBack\TakeOutBack.bat" -Destination "." -Force
+}
+
 if (-not (Test-Path "TakeOutBack")) {
     Write-Host "ERROR: Installation failed." -ForegroundColor Red
     exit 1

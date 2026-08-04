@@ -79,12 +79,9 @@ if [ ! -d "TakeOutBack" ]; then
     exit 1
 fi
 
-# Move launcher scripts to drive root (they were inside TakeOutBack/ in the zip)
+# Move launcher script to drive root
 if [ -f "TakeOutBack/TakeOutBack.sh" ]; then
     mv "TakeOutBack/TakeOutBack.sh" "."
-fi
-if [ -f "TakeOutBack/install.sh" ]; then
-    mv "TakeOutBack/install.sh" "."
 fi
 
 # Make all scripts executable (ZIP does not preserve permissions)
