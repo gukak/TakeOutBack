@@ -67,6 +67,9 @@ if (-not (Test-Path "TakeOutBack")) {
 # Move launcher script to drive root
 if (Test-Path "TakeOutBack\TakeOutBack.bat") {
     Move-Item -Path "TakeOutBack\TakeOutBack.bat" -Destination "." -Force
+    # Convert LF to CRLF (GitHub ZIPs use LF)
+    $content = Get-Content "TakeOutBack.bat" -Raw
+    [System.IO.File]::WriteAllText("TakeOutBack.bat", $content, [System.Text.Encoding]::Default)
 }
 
 # Create Incoming/ and Archive/ at drive root
