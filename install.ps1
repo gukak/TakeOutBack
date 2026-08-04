@@ -43,37 +43,35 @@ try {
 
 Write-Host "Extracting..."
 
-$extractDir = "$INSTALL_DIR\TakeOutBack-temp"
-New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
-
 try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($TEMP_ZIP, $extractDir)
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($TEMP_ZIP, $INSTALL_DIR)
 } catch {
     Write-Host "ERROR: Decompression failed. Try with 7-Zip first." -ForegroundColor Red
+    Remove-Item -Force $TEMP_ZIP -ErrorAction SilentlyContinue
     exit 1
 }
 
-$extractedFolder = Get-ChildItem -Path $extractDir -Directory | Select-Object -First 1
-if ($extractedFolder) {
-    Move-Item -Path $extractedFolder.FullName -Destination "$INSTALL_DIR\TakeOutBack" -Force
-} else {
-    Write-Host "ERROR: Extracted folder not found." -ForegroundColor Red
-    exit 1
+# Rename TakeOutBack-main to TakeOutBack
+if (Test-Path "$INSTALL_DIR\TakeOutBack-main") {
+    Move-Item -Path "$INSTALL_DIR\TakeOutBack-main" -Destination "$INSTALL_DIR\TakeOutBack" -Force
 }
 
-Remove-Item -Recurse -Force $extractDir
 Remove-Item -Force $TEMP_ZIP -ErrorAction SilentlyContinue
+
+if (-not (Test-Path "TakeOutBack")) {
+    Write-Host "ERROR: Installation failed." -ForegroundColor Red
+    exit 1
+}
 
 # Move launcher script to drive root
 if (Test-Path "TakeOutBack\TakeOutBack.bat") {
     Move-Item -Path "TakeOutBack\TakeOutBack.bat" -Destination "." -Force
 }
 
-if (-not (Test-Path "TakeOutBack")) {
-    Write-Host "ERROR: Installation failed." -ForegroundColor Red
-    exit 1
-}
+# Create Incoming/ and Archive/ at drive root
+if (-not (Test-Path "Incoming")) { New-Item -ItemType Directory -Path "Incoming" | Out-Null }
+if (-not (Test-Path "Archive")) { New-Item -ItemType Directory -Path "Archive" | Out-Null }
 
 Write-Host ""
 Write-Host "=== Installation complete ===" -ForegroundColor Green
